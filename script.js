@@ -549,8 +549,10 @@ function zoomTo(targetScale, mouseX = null, mouseY = null) {
   scale = Math.min(Math.max(0.15, targetScale), 3.0);
   
   const rect = svg.getBoundingClientRect();
-  const cx = mouseX !== null ? mouseX : rect.width / 2;
-  const cy = mouseY !== null ? mouseY : rect.height / 2;
+  const rectW = rect.width || window.innerWidth;
+  const rectH = rect.height || (window.innerHeight - 64);
+  const cx = mouseX !== null ? mouseX : rectW / 2;
+  const cy = mouseY !== null ? mouseY : rectH / 2;
   
   translateX = cx - (cx - translateX) * (scale / oldScale);
   translateY = cy - (cy - translateY) * (scale / oldScale);
@@ -564,14 +566,18 @@ function zoom(factor, mouseX = null, mouseY = null) {
 
 function centerMindMap() {
   const rect = svg.getBoundingClientRect();
-  translateX = rect.width / 2;
-  translateY = rect.height / 2;
+  const rectW = rect.width || window.innerWidth;
+  const rectH = rect.height || (window.innerHeight - 64);
+  translateX = rectW / 2;
+  translateY = rectH / 2;
   scale = 1.0;
   updateViewportTransform();
 }
 
 function fitToScreen() {
   const rect = svg.getBoundingClientRect();
+  const rectW = rect.width || window.innerWidth;
+  const rectH = rect.height || (window.innerHeight - 64);
   
   // Calculate bounding box of all nodes
   let minX = Infinity, maxX = -Infinity;
@@ -601,8 +607,8 @@ function fitToScreen() {
   if (mapW === 0 || mapH === 0) return;
   
   const padding = 60;
-  const scaleX = (rect.width - padding) / mapW;
-  const scaleY = (rect.height - padding) / mapH;
+  const scaleX = (rectW - padding) / mapW;
+  const scaleY = (rectH - padding) / mapH;
   
   scale = Math.min(scaleX, scaleY, 1.5); // Don't scale up too much
   scale = Math.max(0.2, scale); // Don't scale down too much
@@ -611,8 +617,8 @@ function fitToScreen() {
   const mapCenterX = (minX + maxX) / 2;
   const mapCenterY = (minY + maxY) / 2;
   
-  translateX = rect.width / 2 - mapCenterX * scale;
-  translateY = rect.height / 2 - mapCenterY * scale;
+  translateX = rectW / 2 - mapCenterX * scale;
+  translateY = rectH / 2 - mapCenterY * scale;
   
   updateViewportTransform();
 }
