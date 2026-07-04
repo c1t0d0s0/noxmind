@@ -1325,6 +1325,14 @@ function setupEventListeners() {
   window.addEventListener('gesturechange', (e) => {
     e.preventDefault();
   }, { passive: false });
+
+  // Prevent page bounce and horizontal viewport scroll on iOS Safari
+  document.addEventListener('touchmove', (e) => {
+    const isScrollable = e.target.closest('.sidebar-content') || e.target.closest('.modal-body');
+    if (!isScrollable) {
+      e.preventDefault();
+    }
+  }, { passive: false });
 }
 
 function setupPresetColors(containerId, property) {
