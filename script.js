@@ -13,8 +13,26 @@ const DEFAULT_MINDMAP = {
   children: []
 };
 
+function getLocalStorageData(key, fallback) {
+  try {
+    const item = localStorage.getItem(key);
+    return item ? JSON.parse(item) : fallback;
+  } catch (e) {
+    console.warn("localStorage is not available:", e);
+    return fallback;
+  }
+}
+
+function setLocalStorageData(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    console.warn("localStorage is not writeable:", e);
+  }
+}
+
 // --- Application State ---
-let mindMapData = JSON.parse(localStorage.getItem('mindy_data')) || DEFAULT_MINDMAP;
+let mindMapData = getLocalStorageData('mindy_data', DEFAULT_MINDMAP);
 let activeNodeId = 'root';
 let isEditing = false;
 let defaultBorderless = false;
@@ -36,6 +54,7 @@ const GAP_Y = 24;
 
 // DOM Elements
 const svg = document.getElementById('mindmap-svg');
+const canvasContainer = document.getElementById('canvas-container');
 const viewport = document.getElementById('viewport');
 const nodesGroup = document.getElementById('nodes-group');
 const connectionsGroup = document.getElementById('connections-group');
@@ -75,7 +94,7 @@ function findParentNode(node, childId) {
 
 // Save to localStorage
 function saveToLocalStorage() {
-  localStorage.setItem('mindy_data', JSON.stringify(mindMapData));
+  setLocalStorageData('mindy_data', mindMapData);
 }
 
 // --- Layout Algorithm (2-Pass Rendering) ---
@@ -1302,25 +1321,26 @@ function escapeHtml(str) {
 let isInitialLayout = true;
 
 // Resize observer to maintain canvas center on size changes
-const resizeObserver = new ResizeObserver(() => {
-  const rect = svg.getBoundingClientRect();
-  const width = rect.width;
-  const height = rect.height;
-  
-  if (width > 0 && height > 0) {
-    if (isInitialLayout) {
-      isInitialLayout = false;
-      lastSvgWidth = width;
-      lastSvgHeight = height;
-      fitToScreen();
-    } else {
-      if (lastSvgWidth > 0 && lastSvgHeight > 0) {
-        translateX += (width - lastSvgWidth) / 2;
-        translateY += (height - lastSvgHeight) / 2;
+const resizeObserver = new ResizeObserver((entries) => {
+  for (let entry of entries) {
+    const width = entry.contentRect.width;
+    const height = entry.contentRect.height;
+    
+    if (width > 0 && height > 0) {
+      if (isInitialLayout) {
+        isInitialLayout = false;
+        lastSvgWidth = width;
+        lastSvgHeight = height;
+        fitToScreen();
+      } else {
+        if (lastSvgWidth > 0 && lastSvgHeight > 0) {
+          translateX += (width - lastSvgWidth) / 2;
+          translateY += (height - lastSvgHeight) / 2;
+        }
+        lastSvgWidth = width;
+        lastSvgHeight = height;
+        updateViewportTransform();
       }
-      lastSvgWidth = width;
-      lastSvgHeight = height;
-      updateViewportTransform();
     }
   }
 });
@@ -1332,8 +1352,8 @@ window.addEventListener('DOMContentLoaded', () => {
   // Render nodes initially
   renderMindMap();
   
-  // Start observing SVG size changes
-  resizeObserver.observe(svg);
+  // Start observing canvas container size changes (HTML div is reliable on WebKit)
+  resizeObserver.observe(canvasContainer);
 });
 
 // Window load event listener to ensure correct initial centering after all styles are loaded
