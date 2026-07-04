@@ -215,10 +215,16 @@ html, body {
   position: relative;
   background-color: var(--bg-base);
   cursor: grab;
+  overflow: hidden;
 }
 
 .canvas-container:active {
   cursor: grabbing;
+}
+
+/* SVG Viewport Acceleration */
+#viewport {
+  will-change: transform;
 }
 
 /* SVG Elements styles */
@@ -231,6 +237,7 @@ html, body {
   display: block;
   user-select: none;
   -webkit-user-select: none;
+  overflow: hidden !important;
 }
 
 /* Background grid */
