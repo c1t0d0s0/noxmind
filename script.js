@@ -1155,7 +1155,8 @@ function setupEventListeners() {
 
   // Global Keyboard Shortcuts
   window.addEventListener('keydown', (e) => {
-    if (isEditing) return; // Ignore global hotkeys while typing text
+    // Ignore global shortcuts if the user is typing in a text field, textarea, or contentEditable element
+    if (isEditing || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
     
     switch (e.key) {
       case 'Tab':
