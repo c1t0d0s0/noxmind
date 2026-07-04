@@ -26,6 +26,8 @@ let translateY = 0;
 let isDragging = false;
 let startX = 0;
 let startY = 0;
+let lastSvgWidth = 0;
+let lastSvgHeight = 0;
 
 // Configuration Constants
 const NODE_WIDTH = 240;
@@ -571,6 +573,8 @@ function centerMindMap() {
   translateX = rectW / 2;
   translateY = rectH / 2;
   scale = 1.0;
+  lastSvgWidth = rectW;
+  lastSvgHeight = rectH;
   updateViewportTransform();
 }
 
@@ -578,6 +582,8 @@ function fitToScreen() {
   const rect = svg.getBoundingClientRect();
   const rectW = rect.width || window.innerWidth;
   const rectH = rect.height || (window.innerHeight - 64);
+  lastSvgWidth = rectW;
+  lastSvgHeight = rectH;
   
   // Calculate bounding box of all nodes
   let minX = Infinity, maxX = -Infinity;
@@ -1269,19 +1275,39 @@ function escapeHtml(str) {
     .replace(/'/g, "&#039;");
 }
 
+let isInitialLayout = true;
+
+// Resize observer to maintain canvas center on size changes
+const resizeObserver = new ResizeObserver(() => {
+  const rect = svg.getBoundingClientRect();
+  const width = rect.width;
+  const height = rect.height;
+  
+  if (width > 0 && height > 0) {
+    if (isInitialLayout) {
+      isInitialLayout = false;
+      lastSvgWidth = width;
+      lastSvgHeight = height;
+      fitToScreen();
+    } else {
+      if (lastSvgWidth > 0 && lastSvgHeight > 0) {
+        translateX += (width - lastSvgWidth) / 2;
+        translateY += (height - lastSvgHeight) / 2;
+      }
+      lastSvgWidth = width;
+      lastSvgHeight = height;
+      updateViewportTransform();
+    }
+  }
+});
+
 // --- Application Init ---
 window.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   
-  // Set initial viewport coordinates to center
-  centerMindMap();
-  
-  // Render and adjust to screen size
+  // Render nodes initially
   renderMindMap();
-  setTimeout(fitToScreen, 150);
-});
-
-// Window resize handler to maintain map focus
-window.addEventListener('resize', () => {
-  updateViewportTransform();
+  
+  // Start observing SVG size changes
+  resizeObserver.observe(svg);
 });
