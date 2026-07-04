@@ -342,12 +342,7 @@ function renderNode(node, depth) {
     div.style.borderColor = '#89b4fa';
   }
 
-  // Shadow filter
-  if (node.borderless) {
-    div.style.filter = node.id === activeNodeId ? 'url(#active-glow)' : 'none';
-  } else {
-    div.style.filter = node.id === activeNodeId ? 'url(#active-glow)' : 'url(#node-shadow)';
-  }
+
   
   const span = document.createElement('span');
   span.className = 'node-text';
@@ -389,7 +384,6 @@ function selectNode(id) {
     const nodeDiv = activeFo.closest('.mindmap-node');
     if (nodeDiv) {
       nodeDiv.classList.add('active');
-      nodeDiv.style.filter = 'url(#active-glow)';
     }
   }
   
@@ -550,9 +544,9 @@ function updateViewportTransform() {
   document.getElementById('zoom-level').textContent = `${Math.round(scale * 100)}%`;
 }
 
-function zoom(factor, mouseX = null, mouseY = null) {
+function zoomTo(targetScale, mouseX = null, mouseY = null) {
   const oldScale = scale;
-  scale = Math.min(Math.max(0.15, scale * factor), 3.0);
+  scale = Math.min(Math.max(0.15, targetScale), 3.0);
   
   const rect = svg.getBoundingClientRect();
   const cx = mouseX !== null ? mouseX : rect.width / 2;
@@ -562,6 +556,10 @@ function zoom(factor, mouseX = null, mouseY = null) {
   translateY = cy - (cy - translateY) * (scale / oldScale);
   
   updateViewportTransform();
+}
+
+function zoom(factor, mouseX = null, mouseY = null) {
+  zoomTo(scale * factor, mouseX, mouseY);
 }
 
 function centerMindMap() {
@@ -878,15 +876,20 @@ function exportPNG() {
 
 function updateSidebar() {
   const node = findNodeById(mindMapData, activeNodeId);
-  const preview = document.getElementById('node-preview');
+  const nodeTextInput = document.getElementById('node-text-input');
   
   if (!node) {
-    preview.textContent = "選択されていません";
+    nodeTextInput.value = "";
+    nodeTextInput.disabled = true;
+    nodeTextInput.placeholder = "選択されていません";
     return;
   }
   
-  preview.textContent = node.text;
-  preview.style.color = node.color || '#ffffff';
+  nodeTextInput.disabled = false;
+  nodeTextInput.placeholder = "テキストを入力...";
+  if (document.activeElement !== nodeTextInput) {
+    nodeTextInput.value = node.text;
+  }
   
   // Set custom color pickers to matching node values
   document.getElementById('text-color-picker').value = node.color || '#ffffff';
@@ -997,7 +1000,7 @@ function setupEventListeners() {
   // SVG zoom/pan dragging listeners
   svg.addEventListener('mousedown', (e) => {
     // Only drag on canvas background, not on interactive nodes
-    if (e.target === svg || e.target.classList.contains('background-grid')) {
+    if (!e.target.closest('.mindmap-node')) {
       isDragging = true;
       startX = e.clientX - translateX;
       startY = e.clientY - translateY;
@@ -1042,7 +1045,8 @@ function setupEventListeners() {
     if (e.touches.length === 1) {
       const touch = e.touches[0];
       const target = e.target;
-      if (target === svg || target.classList.contains('background-grid')) {
+      // Allow dragging starting from any element that isn't a node
+      if (!target.closest('.mindmap-node')) {
         isTouchDragging = true;
         startX = touch.clientX - translateX;
         startY = touch.clientY - translateY;
@@ -1058,23 +1062,26 @@ function setupEventListeners() {
       touchStartX = ((t1.clientX + t2.clientX) / 2) - rect.left;
       touchStartY = ((t1.clientY + t2.clientY) / 2) - rect.top;
     }
-  });
+  }, { passive: true });
 
   svg.addEventListener('touchmove', (e) => {
     if (isTouchDragging && e.touches.length === 1) {
+      e.preventDefault(); // Cancel browser-native scrolling/page-bounce on drag
       const touch = e.touches[0];
       translateX = touch.clientX - startX;
       translateY = touch.clientY - startY;
       updateViewportTransform();
     } else if (e.touches.length === 2) {
+      e.preventDefault(); // Cancel browser-native zoom behavior
       const t1 = e.touches[0];
       const t2 = e.touches[1];
       const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-      const factor = dist / touchStartDist;
-      
-      zoom(factor, touchStartX, touchStartY);
+      if (touchStartDist > 0) {
+        const factor = dist / touchStartDist;
+        zoomTo(touchStartScale * factor, touchStartX, touchStartY);
+      }
     }
-  });
+  }, { passive: false });
 
   svg.addEventListener('touchend', () => {
     isTouchDragging = false;
@@ -1082,7 +1089,7 @@ function setupEventListeners() {
 
   // Canvas click to deselect node and close sidebar (if clicking bg)
   svg.addEventListener('click', (e) => {
-    if (e.target === svg || e.target.classList.contains('background-grid')) {
+    if (!e.target.closest('.mindmap-node')) {
       if (isEditing) finishEditing();
       activeNodeId = null;
       document.querySelectorAll('.mindmap-node').forEach(el => el.classList.remove('active'));
@@ -1195,6 +1202,22 @@ function setupEventListeners() {
   document.getElementById('chk-borderless').addEventListener('change', (e) => {
     defaultBorderless = e.target.checked;
     updateActiveNodeStyle('borderless', e.target.checked);
+  });
+
+  // Sidebar Text Input change listener
+  const nodeTextInput = document.getElementById('node-text-input');
+  nodeTextInput.addEventListener('input', (e) => {
+    const node = findNodeById(mindMapData, activeNodeId);
+    if (node) {
+      node.text = e.target.value;
+      saveToLocalStorage();
+      
+      const span = document.getElementById(`text-${node.id}`);
+      if (span) {
+        span.textContent = node.text;
+      }
+      renderMindMap();
+    }
   });
 
   // Preset Colors Click Handlers
