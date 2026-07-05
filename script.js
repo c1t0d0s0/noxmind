@@ -562,6 +562,9 @@ function deleteNode(nodeId = activeNodeId) {
 function updateViewportTransform() {
   viewport.setAttribute('transform', `translate(${translateX}, ${translateY}) scale(${scale})`);
   
+  // Force WebKit/Safari to repaint the SVG canvas to prevent rendering trails of foreignObject elements
+  svg.style.opacity = svg.style.opacity === '0.999' ? '1' : '0.999';
+  
   // Update UI Zoom Level indicator
   document.getElementById('zoom-level').textContent = `${Math.round(scale * 100)}%`;
 }
