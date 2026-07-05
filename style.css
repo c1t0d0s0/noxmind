@@ -756,6 +756,86 @@ kbd {
   box-shadow: 0 1px 1px rgba(0,0,0,0.4);
 }
 
+/* Responsiveness moved to the end of the stylesheet to prevent global style overrides */
+
+/* Toggle Switch Styling */
+.toggle-wrapper {
+  background-color: var(--bg-element);
+  border: 1px solid var(--border-color);
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-main);
+  user-select: none;
+}
+
+.toggle-container input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* Borderless Node Styling */
+.mindmap-node.borderless {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+/* Borderless active/selected state */
+.mindmap-node.borderless.active {
+  border-color: rgba(137, 180, 250, 0.4) !important;
+  border-style: dashed !important;
+  border-width: 2px !important;
+  box-shadow: 0 0 12px rgba(137, 180, 250, 0.3) !important;
+}
+
+.mindmap-node.borderless.editing {
+  border-color: var(--accent) !important;
+  border-style: solid !important;
+  background-color: var(--bg-element) !important;
+}
+
+/* Sidebar Text Area Editor styling */
+.node-text-input {
+  width: 100%;
+  background-color: var(--bg-base);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-main);
+  padding: 10px 12px;
+  font-family: var(--font-family);
+  font-size: 14px;
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+
+.node-text-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(137, 180, 250, 0.2);
+}
+
+.node-text-input:disabled {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-color: transparent;
+  color: var(--text-muted);
+  text-align: center;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 /* Responsiveness */
 @media (max-width: 768px) {
   /* Header adjustments */
@@ -837,83 +917,5 @@ kbd {
   .mindmap-node.editing {
     font-size: 16px !important;
   }
-}
-
-/* Toggle Switch Styling */
-.toggle-wrapper {
-  background-color: var(--bg-element);
-  border: 1px solid var(--border-color);
-  padding: 12px;
-  border-radius: 8px;
-}
-
-.toggle-container {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-main);
-  user-select: none;
-}
-
-.toggle-container input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-
-/* Borderless Node Styling */
-.mindmap-node.borderless {
-  background-color: transparent !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-  filter: none !important;
-}
-
-/* Borderless active/selected state */
-.mindmap-node.borderless.active {
-  border-color: rgba(137, 180, 250, 0.4) !important;
-  border-style: dashed !important;
-  border-width: 2px !important;
-  box-shadow: 0 0 12px rgba(137, 180, 250, 0.3) !important;
-}
-
-.mindmap-node.borderless.editing {
-  border-color: var(--accent) !important;
-  border-style: solid !important;
-  background-color: var(--bg-element) !important;
-}
-
-/* Sidebar Text Area Editor styling */
-.node-text-input {
-  width: 100%;
-  background-color: var(--bg-base);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  color: var(--text-main);
-  padding: 10px 12px;
-  font-family: var(--font-family);
-  font-size: 14px;
-  resize: none;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  box-shadow: var(--shadow-sm);
-}
-
-.node-text-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(137, 180, 250, 0.2);
-}
-
-.node-text-input:disabled {
-  background-color: rgba(0, 0, 0, 0.2);
-  border-color: transparent;
-  color: var(--text-muted);
-  text-align: center;
-  cursor: not-allowed;
-  box-shadow: none;
 }
 
