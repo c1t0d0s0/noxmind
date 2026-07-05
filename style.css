@@ -783,6 +783,7 @@ kbd {
     border-left: none;
     border-top: 1px solid var(--border-color);
     transform: translateY(100%);
+    overflow: hidden;
   }
   
   .property-sidebar.open {
@@ -791,6 +792,9 @@ kbd {
   
   .sidebar-content {
     display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
     gap: 16px;
     padding: 16px;
   }
