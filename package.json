@@ -4,6 +4,7 @@
   "description": "Elegant Mind Mapping App",
   "main": "index.html",
   "scripts": {
+    "build:assets": "node build-assets.js",
     "tauri": "tauri"
   },
   "devDependencies": {

@@ -2,11 +2,11 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Mindy",
   "version": "0.1.0",
-  "identifier": "net.cuio.mindy.app",
+  "identifier": "net.cuio.mindy",
   "build": {
-    "frontendDist": "../",
-    "beforeDevCommand": "",
-    "beforeBuildCommand": ""
+    "frontendDist": "../www",
+    "beforeDevCommand": "npm run build:assets",
+    "beforeBuildCommand": "npm run build:assets"
   },
   "app": {
     "windows": [
