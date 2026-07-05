@@ -38,6 +38,15 @@ let activeNodeId = 'root';
 let isEditing = false;
 let defaultBorderless = false;
 
+// Drag and Drop state
+let dragNodeId = null;
+let dragStartX = 0;
+let dragStartY = 0;
+let dragNodeOffsetX = 0;
+let dragNodeOffsetY = 0;
+let isDraggingNode = false;
+let dropTargetNodeId = null;
+
 // Zoom and Pan state
 let scale = 1;
 let translateX = 0;
@@ -96,6 +105,53 @@ function findParentNode(node, childId) {
 // Save to localStorage
 function saveToLocalStorage() {
   setLocalStorageData('mindy_data', mindMapData);
+}
+
+// Convert client coordinates to SVG viewport coordinates
+function getSvgCoordinates(clientX, clientY) {
+  const rect = svg.getBoundingClientRect();
+  return {
+    x: (clientX - rect.left - translateX) / scale,
+    y: (clientY - rect.top - translateY) / scale
+  };
+}
+
+// Check if a node is a descendant of another node (to avoid circular parent-child loops)
+function isDescendant(parent, targetId) {
+  if (parent.id === targetId) return true;
+  if (parent.children) {
+    for (let child of parent.children) {
+      if (isDescendant(child, targetId)) return true;
+    }
+  }
+  return false;
+}
+
+// Move node to a new parent node (re-parenting)
+function moveNodeToNewParent(nodeId, newParentId) {
+  const node = findNodeById(mindMapData, nodeId);
+  const oldParent = findParentNode(mindMapData, nodeId);
+  const newParent = findNodeById(mindMapData, newParentId);
+  
+  if (!node || !oldParent || !newParent) return;
+  
+  // Remove from old parent
+  oldParent.children = oldParent.children.filter(c => c.id !== nodeId);
+  
+  // Adopt or generate branchColor
+  if (newParentId === 'root') {
+    const niceColors = ['#f38ba8', '#a6e3a1', '#f9e2af', '#89b4fa', '#cba6f7', '#fab387', '#94e2d5', '#f5e0dc'];
+    node.branchColor = niceColors[newParent.children.length % niceColors.length];
+  } else {
+    node.branchColor = newParent.branchColor;
+  }
+  
+  // Add to new parent
+  newParent.children.push(node);
+  
+  saveToLocalStorage();
+  renderMindMap();
+  selectNode(nodeId);
 }
 
 // --- Layout Algorithm (2-Pass Rendering) ---
@@ -342,6 +398,7 @@ function renderConnections(node) {
  */
 function renderNode(node, depth) {
   const fo = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+  fo.setAttribute('id', `fo-${node.id}`);
   fo.setAttribute('x', node.x - node.width / 2);
   fo.setAttribute('y', node.y - node.height / 2);
   fo.setAttribute('width', node.width);
@@ -349,6 +406,7 @@ function renderNode(node, depth) {
   fo.setAttribute('class', 'mindmap-node-wrapper');
   
   const div = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
+  div.setAttribute('data-id', node.id);
   div.className = `mindmap-node level-${depth}`;
   if (node.id === activeNodeId) div.className += ' active';
   if (node.borderless) div.className += ' borderless';
@@ -384,6 +442,22 @@ function renderNode(node, depth) {
   div.addEventListener('dblclick', (e) => {
     e.stopPropagation();
     startEditing(node.id);
+  });
+
+  div.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return; // Left click only
+    if (isEditing) return;
+    if (node.id === 'root') return; // Root cannot be dragged
+    
+    e.stopPropagation();
+    
+    dragNodeId = node.id;
+    const mouseSvg = getSvgCoordinates(e.clientX, e.clientY);
+    dragStartX = mouseSvg.x;
+    dragStartY = mouseSvg.y;
+    dragNodeOffsetX = node.x - mouseSvg.x;
+    dragNodeOffsetY = node.y - mouseSvg.y;
+    isDraggingNode = false;
   });
 
   // Render children
@@ -1124,12 +1198,87 @@ function setupEventListeners() {
       translateX = e.clientX - startX;
       translateY = e.clientY - startY;
       updateViewportTransform();
+    } else if (dragNodeId) {
+      const mouseSvg = getSvgCoordinates(e.clientX, e.clientY);
+      
+      if (!isDraggingNode) {
+        const dx = mouseSvg.x - dragStartX;
+        const dy = mouseSvg.y - dragStartY;
+        // Start dragging after moving 5px
+        if (Math.hypot(dx, dy) > 5) {
+          isDraggingNode = true;
+          const fo = document.getElementById(`fo-${dragNodeId}`);
+          if (fo) {
+            fo.classList.add('dragging');
+            fo.style.pointerEvents = 'none'; // Enable elementFromPoint underneath
+            
+            // Move dragged node to front in DOM
+            nodesGroup.appendChild(fo);
+          }
+        }
+      }
+      
+      if (isDraggingNode) {
+        const newX = mouseSvg.x + dragNodeOffsetX;
+        const newY = mouseSvg.y + dragNodeOffsetY;
+        
+        const fo = document.getElementById(`fo-${dragNodeId}`);
+        if (fo) {
+          const nodeObj = findNodeById(mindMapData, dragNodeId);
+          fo.setAttribute('x', newX - nodeObj.width / 2);
+          fo.setAttribute('y', newY - nodeObj.height / 2);
+        }
+        
+        // Detect drop target node
+        const hoverEl = document.elementFromPoint(e.clientX, e.clientY);
+        const hoverNodeEl = hoverEl ? hoverEl.closest('.mindmap-node') : null;
+        
+        // Clear previous target highlights
+        document.querySelectorAll('.mindmap-node').forEach(el => el.classList.remove('drop-target'));
+        dropTargetNodeId = null;
+        
+        if (hoverNodeEl) {
+          const hoverNodeId = hoverNodeEl.getAttribute('data-id');
+          if (hoverNodeId && hoverNodeId !== dragNodeId) {
+            const dragNode = findNodeById(mindMapData, dragNodeId);
+            const isDesc = isDescendant(dragNode, hoverNodeId);
+            
+            if (!isDesc) {
+              dropTargetNodeId = hoverNodeId;
+              hoverNodeEl.classList.add('drop-target');
+            }
+          }
+        }
+      }
     }
   });
 
   window.addEventListener('mouseup', () => {
     isDragging = false;
     svg.style.cursor = 'grab';
+    
+    if (dragNodeId) {
+      const fo = document.getElementById(`fo-${dragNodeId}`);
+      if (fo) {
+        fo.classList.remove('dragging');
+        fo.style.pointerEvents = 'auto';
+      }
+      
+      document.querySelectorAll('.mindmap-node').forEach(el => el.classList.remove('drop-target'));
+      
+      if (isDraggingNode) {
+        if (dropTargetNodeId) {
+          moveNodeToNewParent(dragNodeId, dropTargetNodeId);
+        } else {
+          // Snap back
+          renderMindMap();
+        }
+      }
+      
+      dragNodeId = null;
+      isDraggingNode = false;
+      dropTargetNodeId = null;
+    }
   });
 
   // Mouse wheel zoom
