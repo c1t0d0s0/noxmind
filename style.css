@@ -541,6 +541,7 @@ html, body {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
+  min-width: 0;
 }
 
 .preset-color {
@@ -900,6 +901,7 @@ kbd {
   
   .preset-colors {
     grid-template-columns: repeat(4, 1fr);
+    min-width: 0;
   }
   
   /* Adjust canvas height when sidebar open on mobile */

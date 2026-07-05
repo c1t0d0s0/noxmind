@@ -414,6 +414,15 @@ function selectNode(id) {
   
   // Open property panel sidebar
   sidebar.classList.add('open');
+  
+  // Reset document scroll positions to block iOS Safari auto-scroll bug on value updates
+  setTimeout(() => {
+    window.scrollTo(0, 0);
+    document.body.scrollLeft = 0;
+    document.body.scrollTop = 0;
+    document.documentElement.scrollLeft = 0;
+    document.documentElement.scrollTop = 0;
+  }, 0);
 }
 
 function startEditing(id) {
