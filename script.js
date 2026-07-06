@@ -46,6 +46,7 @@ let dragNodeOffsetX = 0;
 let dragNodeOffsetY = 0;
 let isDraggingNode = false;
 let dropTargetNodeId = null;
+let contextMenuNodeId = null;
 
 // Zoom and Pan state
 let scale = 1;
@@ -152,6 +153,45 @@ function moveNodeToNewParent(nodeId, newParentId) {
   saveToLocalStorage();
   renderMindMap();
   selectNode(nodeId);
+}
+
+// Show custom context menu for a node
+function showContextMenu(x, y, nodeId) {
+  const menu = document.getElementById('context-menu');
+  const ctxAddSibling = document.getElementById('ctx-add-sibling');
+  const ctxDeleteNode = document.getElementById('ctx-delete-node');
+  const divider = menu.querySelector('.context-menu-divider');
+  
+  if (nodeId === 'root') {
+    if (ctxAddSibling) ctxAddSibling.style.display = 'none';
+    if (ctxDeleteNode) ctxDeleteNode.style.display = 'none';
+    if (divider) divider.style.display = 'none';
+  } else {
+    if (ctxAddSibling) ctxAddSibling.style.display = 'flex';
+    if (ctxDeleteNode) ctxDeleteNode.style.display = 'flex';
+    if (divider) divider.style.display = 'block';
+  }
+  
+  menu.style.display = 'block';
+  
+  // Prevent menu from going off-screen
+  const menuWidth = menu.offsetWidth || 180;
+  const menuHeight = menu.offsetHeight || 130;
+  
+  const posX = (x + menuWidth > window.innerWidth) ? x - menuWidth : x;
+  const posY = (y + menuHeight > window.innerHeight) ? y - menuHeight : y;
+  
+  menu.style.left = `${posX}px`;
+  menu.style.top = `${posY}px`;
+}
+
+// Hide custom context menu
+function hideContextMenu() {
+  const menu = document.getElementById('context-menu');
+  if (menu) {
+    menu.style.display = 'none';
+  }
+  contextMenuNodeId = null;
 }
 
 // --- Layout Algorithm (2-Pass Rendering) ---
@@ -458,6 +498,16 @@ function renderNode(node, depth) {
     dragNodeOffsetX = node.x - mouseSvg.x;
     dragNodeOffsetY = node.y - mouseSvg.y;
     isDraggingNode = false;
+  });
+
+  div.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isEditing) return;
+    
+    contextMenuNodeId = node.id;
+    selectNode(node.id);
+    showContextMenu(e.clientX, e.clientY, node.id);
   });
 
   // Render children
@@ -1184,6 +1234,7 @@ function moveSelection(direction) {
 function setupEventListeners() {
   // SVG zoom/pan dragging listeners
   svg.addEventListener('mousedown', (e) => {
+    hideContextMenu();
     // Only drag on canvas background, not on interactive nodes
     if (!e.target.closest('.mindmap-node')) {
       isDragging = true;
@@ -1373,6 +1424,7 @@ function setupEventListeners() {
 
   // Canvas click to deselect node and close sidebar (if clicking bg)
   svg.addEventListener('click', (e) => {
+    hideContextMenu();
     if (!e.target.closest('.mindmap-node')) {
       if (isEditing) finishEditing();
       activeNodeId = null;
@@ -1405,6 +1457,7 @@ function setupEventListeners() {
         break;
       case 'Escape':
         e.preventDefault();
+        hideContextMenu();
         activeNodeId = null;
         sidebar.classList.remove('open');
         renderMindMap();
@@ -1476,11 +1529,42 @@ function setupEventListeners() {
     dropdownToggle.closest('.dropdown').classList.toggle('open');
   });
   
-  // Close dropdown on click outside
+  // Close dropdown on click outside and dismiss context menu
   window.addEventListener('click', (e) => {
     if (!e.target.closest('#btn-export-image')) {
       document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open'));
     }
+    hideContextMenu();
+  });
+
+  // Prevent closing menu when clicking on the menu itself
+  document.getElementById('context-menu').addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+
+  // Context Menu Actions
+  document.getElementById('ctx-add-child').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (contextMenuNodeId) {
+      addNewChild(contextMenuNodeId);
+    }
+    hideContextMenu();
+  });
+
+  document.getElementById('ctx-add-sibling').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (contextMenuNodeId) {
+      addNewSibling(contextMenuNodeId);
+    }
+    hideContextMenu();
+  });
+
+  document.getElementById('ctx-delete-node').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (contextMenuNodeId) {
+      deleteNode(contextMenuNodeId);
+    }
+    hideContextMenu();
   });
 
   document.getElementById('btn-export-png').addEventListener('click', exportPNG);
@@ -1623,6 +1707,12 @@ const resizeObserver = new ResizeObserver((entries) => {
 
 // --- Application Init ---
 window.addEventListener('DOMContentLoaded', () => {
+  // Handle fallback version display if placeholder isn't replaced by build script
+  const versionSpan = document.querySelector('.app-version');
+  if (versionSpan && versionSpan.textContent.includes('__APP_VERSION__')) {
+    versionSpan.textContent = 'v0.2.0'; // Fallback value from tauri.conf.json
+  }
+
   setupEventListeners();
   
   // Render nodes initially

@@ -224,7 +224,7 @@
   <div class="modal-overlay" id="help-modal">
     <div class="modal">
       <div class="modal-header">
-        <h2>Mindy の使い方</h2>
+        <h2>Mindy の使い方 <span class="app-version">v__APP_VERSION__</span></h2>
         <button class="modal-close-btn" id="btn-close-help"><span class="material-icons-round">close</span></button>
       </div>
       <div class="modal-body">
@@ -234,6 +234,7 @@
           <li><strong>スクロール:</strong> 背景をドラッグすると画面を移動できます。</li>
           <li><strong>ノードの選択:</strong> ノードをクリックすると選択できます。</li>
           <li><strong>ノードの編集:</strong> 選択されたノードをダブルクリックするとテキストを変更できます。</li>
+          <li><strong>メニュー操作:</strong> ノードを右クリックすると、追加・削除が簡単に行えるメニューが表示されます。</li>
         </ul>
 
         <h3>キーボードショートカット</h3>
@@ -273,6 +274,23 @@
         </table>
       </div>
     </div>
+  </div>
+
+  <!-- Custom Context Menu -->
+  <div id="context-menu" class="context-menu">
+    <button id="ctx-add-child" class="context-menu-item">
+      <span class="material-icons-round">add_circle</span>
+      子ノードを追加
+    </button>
+    <button id="ctx-add-sibling" class="context-menu-item">
+      <span class="material-icons-round">add</span>
+      同階層を追加
+    </button>
+    <div class="context-menu-divider"></div>
+    <button id="ctx-delete-node" class="context-menu-item danger">
+      <span class="material-icons-round">delete_outline</span>
+      ノードを削除
+    </button>
   </div>
 
   <!-- Confirm Modal -->

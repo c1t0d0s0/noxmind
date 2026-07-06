@@ -939,3 +939,87 @@ kbd {
   transform: scale(1.03);
 }
 
+/* Version styling in modal */
+.app-version {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background-color: var(--bg-element);
+  border: 1px solid var(--border-color);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* Context Menu Styling */
+.context-menu {
+  display: none;
+  position: fixed;
+  background-color: rgba(21, 21, 28, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  min-width: 180px;
+  z-index: 500;
+  padding: 4px 0;
+  animation: context-menu-fade 0.15s ease-out;
+}
+
+@keyframes context-menu-fade {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.context-menu-item {
+  background: none;
+  border: none;
+  color: var(--text-main);
+  width: 100%;
+  padding: 8px 16px;
+  text-align: left;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.15s ease;
+}
+
+.context-menu-item span {
+  font-size: 18px;
+  color: var(--text-muted);
+}
+
+.context-menu-item:hover {
+  background-color: var(--bg-element);
+  color: var(--text-main);
+}
+
+.context-menu-item:hover span {
+  color: var(--accent);
+}
+
+.context-menu-item.danger {
+  color: var(--danger);
+}
+
+.context-menu-item.danger span {
+  color: var(--danger);
+  opacity: 0.8;
+}
+
+.context-menu-item.danger:hover {
+  background-color: rgba(243, 139, 168, 0.1);
+}
+
+.context-menu-divider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 4px 0;
+}
+
