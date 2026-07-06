@@ -918,3 +918,24 @@ kbd {
   }
 }
 
+/* Drag and Drop Styles */
+.mindmap-node.drop-target {
+  border-style: dashed !important;
+  border-color: var(--accent) !important;
+  border-width: 2px !important;
+  background-color: rgba(137, 180, 250, 0.15) !important;
+  box-shadow: 0 0 16px rgba(137, 180, 250, 0.4) !important;
+  transform: scale(1.05) !important;
+}
+
+.mindmap-node-wrapper.dragging {
+  opacity: 0.6;
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.5));
+  cursor: grabbing !important;
+}
+
+.mindmap-node-wrapper.dragging .mindmap-node {
+  cursor: grabbing !important;
+  transform: scale(1.03);
+}
+
