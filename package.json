@@ -1,6 +1,6 @@
 {
   "name": "noxmind",
-  "version": "0.8.5",
+  "version": "0.8.6",
   "description": "Elegant Mind Mapping App",
   "main": "index.html",
   "scripts": {

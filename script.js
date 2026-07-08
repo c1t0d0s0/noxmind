@@ -274,13 +274,13 @@ const GAP_X = 100;
 const GAP_Y = 24;
 
 // DOM Elements
-const svg = document.getElementById('mindmap-svg');
-const canvasContainer = document.getElementById('canvas-container');
-const viewport = document.getElementById('viewport');
-const nodesGroup = document.getElementById('nodes-group');
-const connectionsGroup = document.getElementById('connections-group');
-const sidebar = document.getElementById('property-sidebar');
-const fileInput = document.getElementById('file-input');
+let svg;
+let canvasContainer;
+let viewport;
+let nodesGroup;
+let connectionsGroup;
+let sidebar;
+let fileInput;
 
 // --- Helper Functions ---
 
@@ -2374,6 +2374,15 @@ const resizeObserver = new ResizeObserver((entries) => {
 
 // --- Application Init ---
 window.addEventListener('DOMContentLoaded', () => {
+  // Initialize DOM elements
+  svg = document.getElementById('mindmap-svg');
+  canvasContainer = document.getElementById('canvas-container');
+  viewport = document.getElementById('viewport');
+  nodesGroup = document.getElementById('nodes-group');
+  connectionsGroup = document.getElementById('connections-group');
+  sidebar = document.getElementById('property-sidebar');
+  fileInput = document.getElementById('file-input');
+
   // Handle fallback version display if placeholder isn't replaced by build script
   const versionSpan = document.querySelector('.app-version');
   if (versionSpan && versionSpan.textContent.includes('__APP_VERSION__')) {
