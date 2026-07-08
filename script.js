@@ -238,6 +238,10 @@ function setLocalStorageData(key, value) {
 
 // --- Application State ---
 let mindMapData = getLocalStorageData('noxmind_data', DEFAULT_MINDMAP);
+if (!mindMapData || mindMapData.id !== 'root' || typeof mindMapData.text !== 'string' || !Array.isArray(mindMapData.children)) {
+  console.warn("Invalid mindMapData in localStorage, resetting to default.");
+  mindMapData = JSON.parse(JSON.stringify(DEFAULT_MINDMAP));
+}
 let layoutMode = getLocalStorageData('noxmind_layout_mode', 'balanced');
 let currentFilePath = null;
 let activeNodeId = 'root';
@@ -713,31 +717,46 @@ function renderNode(node, depth) {
   
   div.appendChild(span);
 
+  fo.appendChild(div);
+  nodesGroup.appendChild(fo);
+
   // Render toggle button if node has children and is not the root node
   if (node.id !== 'root' && node.children && node.children.length > 0) {
-    const toggleBtn = document.createElement('button');
-    toggleBtn.className = 'node-toggle-btn';
-    
     const dir = getNodeDirection(node.id);
-    toggleBtn.classList.add(dir === 1 ? 'dir-right' : 'dir-left');
-    
+    const toggleX = node.x + dir * (node.width / 2);
+    const toggleY = node.y;
+
+    const toggleG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    toggleG.setAttribute('class', 'node-toggle-svg');
+    toggleG.setAttribute('cursor', 'pointer');
+
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', toggleX);
+    circle.setAttribute('cy', toggleY);
+    circle.setAttribute('r', '10');
+    circle.setAttribute('fill', 'var(--bg-surface)');
+    circle.setAttribute('stroke', 'var(--accent)');
+    circle.setAttribute('stroke-width', '1.5');
+    toggleG.appendChild(circle);
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    let pathData = `M ${toggleX - 5} ${toggleY} L ${toggleX + 5} ${toggleY}`;
     if (node.collapsed) {
-      toggleBtn.classList.add('collapsed');
-      toggleBtn.innerHTML = '<span class="material-icons-round">add</span>';
-    } else {
-      toggleBtn.innerHTML = '<span class="material-icons-round">remove</span>';
+      pathData += ` M ${toggleX} ${toggleY - 5} L ${toggleX} ${toggleY + 5}`;
     }
-    
-    toggleBtn.addEventListener('click', (e) => {
+    path.setAttribute('d', pathData);
+    path.setAttribute('stroke', 'var(--text-main)');
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('stroke-linecap', 'round');
+    toggleG.appendChild(path);
+
+    toggleG.addEventListener('click', (e) => {
       e.stopPropagation();
       toggleNodeCollapse(node.id);
     });
-    
-    div.appendChild(toggleBtn);
-  }
 
-  fo.appendChild(div);
-  nodesGroup.appendChild(fo);
+    nodesGroup.appendChild(toggleG);
+  }
 
   // Attach Event Listeners to Nodes
   div.addEventListener('click', (e) => {
@@ -1102,7 +1121,7 @@ function fitToScreen() {
 }
 
 // --- Tauri Native File API Helper ---
-function isTauri() {
+function checkIsTauri() {
   try {
     return typeof window !== 'undefined' && 
            window.__TAURI__ !== undefined && 
@@ -1892,7 +1911,7 @@ function setupEventListeners() {
   const btnImport = document.getElementById('btn-import');
   if (btnImport) {
     btnImport.addEventListener('click', () => {
-      if (isTauri()) {
+      if (checkIsTauri()) {
         openNative();
       } else {
         if (fileInput) fileInput.click();
@@ -1907,7 +1926,7 @@ function setupEventListeners() {
   const saveDropdownToggle = document.getElementById('btn-save-dropdown');
   const saveDropdownMenu = saveDropdownToggle ? (document.querySelector('#btn-save-dropdown + .dropdown-menu') || saveDropdownToggle.nextElementSibling) : null;
 
-  if (!isTauri()) {
+  if (!checkIsTauri()) {
     // Web Mode: Turn dropdown button into a direct export button
     if (saveDropdownToggle) {
       saveDropdownToggle.classList.remove('dropdown-toggle');

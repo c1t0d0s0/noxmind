@@ -10,7 +10,56 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
   <!-- Google Material Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-
+  <script>
+    window.onerror = function(message, source, lineno, colno, error) {
+      const errorDiv = document.createElement('div');
+      errorDiv.style.position = 'fixed';
+      errorDiv.style.top = '0';
+      errorDiv.style.left = '0';
+      errorDiv.style.width = '100%';
+      errorDiv.style.height = '100%';
+      errorDiv.style.backgroundColor = 'rgba(0,0,0,0.95)';
+      errorDiv.style.color = '#ff6b6b';
+      errorDiv.style.padding = '30px';
+      errorDiv.style.zIndex = '999999';
+      errorDiv.style.fontFamily = 'monospace';
+      errorDiv.style.fontSize = '14px';
+      errorDiv.style.lineHeight = '1.5';
+      errorDiv.style.whiteSpace = 'pre-wrap';
+      errorDiv.style.overflow = 'auto';
+      errorDiv.style.boxSizing = 'border-box';
+      errorDiv.innerHTML = '<h2 style="color: #ff4a4a; margin-top: 0;">[NoxMind JS Error]</h2>' +
+                           '<p><strong>Message:</strong> ' + message + '</p>' +
+                           '<p><strong>Source:</strong> ' + source + '</p>' +
+                           '<p><strong>Line:</strong> ' + lineno + ' <strong>Column:</strong> ' + colno + '</p>' +
+                           '<p><strong>Stack:</strong> ' + (error && error.stack ? error.stack : 'N/A') + '</p>';
+      document.body.appendChild(errorDiv);
+      return false;
+    };
+    window.addEventListener('unhandledrejection', function(event) {
+      const error = event.reason;
+      const errorDiv = document.createElement('div');
+      errorDiv.style.position = 'fixed';
+      errorDiv.style.top = '0';
+      errorDiv.style.left = '0';
+      errorDiv.style.width = '100%';
+      errorDiv.style.height = '100%';
+      errorDiv.style.backgroundColor = 'rgba(0,0,0,0.95)';
+      errorDiv.style.color = '#ff6b6b';
+      errorDiv.style.padding = '30px';
+      errorDiv.style.zIndex = '999999';
+      errorDiv.style.fontFamily = 'monospace';
+      errorDiv.style.fontSize = '14px';
+      errorDiv.style.lineHeight = '1.5';
+      errorDiv.style.whiteSpace = 'pre-wrap';
+      errorDiv.style.overflow = 'auto';
+      errorDiv.style.boxSizing = 'border-box';
+      errorDiv.innerHTML = '<h2 style="color: #ff4a4a; margin-top: 0;">[NoxMind Unhandled Promise Rejection]</h2>' +
+                           '<p><strong>Reason:</strong> ' + error + '</p>' +
+                           '<p><strong>Stack:</strong> ' + (error && error.stack ? error.stack : 'N/A') + '</p>';
+      document.body.appendChild(errorDiv);
+    });
+  </script>
 </head>
 <body>
   <div class="app-container">
