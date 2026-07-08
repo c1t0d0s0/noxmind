@@ -2,83 +2,78 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Mindy</title>
-  <link rel="stylesheet" href="style.css">
-  <!-- Google Material Icons -->
-  <link href="https://fonts.googleapis.com/css2?family=Material+Icons+Round" rel="stylesheet">
-  <!-- Google Fonts: Outfit -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
+  <title>Mindy - Elegant Mind Mapping</title>
+  <link class="cache-buster" rel="stylesheet" href="style.css?v=20260705-12">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- Google Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
 </head>
 <body>
   <div class="app-container">
-    <!-- Header Area -->
+    <!-- Header -->
     <header class="app-header">
-      <div class="header-left">
-        <span class="material-icons-round logo-icon">blur_on</span>
-        <span class="logo-text">Mindy</span>
+      <div class="header-logo">
+        <span class="material-icons-round logo-icon">psychology</span>
+        <h1>Mindy</h1>
       </div>
-      
-      <div class="header-right">
-        <button id="btn-new" class="app-btn">
-          <span class="material-icons-round">add</span>
+      <div class="header-actions">
+        <button id="btn-new" class="icon-btn" data-i18n-title="btn-new-title" title="新規作成">
+          <span class="material-icons-round">create_new_folder</span>
           <span class="btn-text" data-i18n="btn-new">新規</span>
         </button>
-        <button id="btn-import" class="app-btn">
+        <button id="btn-import" class="icon-btn" data-i18n-title="btn-import-title" title="データを読み込む (.json)">
           <span class="material-icons-round">folder_open</span>
           <span class="btn-text" data-i18n="btn-import">開く</span>
         </button>
-        <button id="btn-export" class="app-btn">
+        <input type="file" id="file-input" accept=".json" style="display: none;">
+        
+        <button id="btn-export" class="icon-btn" data-i18n-title="btn-export-title" title="データを保存する (.json)">
           <span class="material-icons-round">save</span>
           <span class="btn-text" data-i18n="btn-export">保存</span>
         </button>
-        <input type="file" id="file-input" accept=".json" style="display: none;">
         
         <div class="divider"></div>
         
         <div class="dropdown">
-          <button id="btn-export-image" class="app-btn primary">
+          <button id="btn-export-image" class="icon-btn dropdown-toggle" data-i18n-title="btn-export-image-title" title="画像として出力">
             <span class="material-icons-round">image</span>
             <span class="btn-text" data-i18n="btn-export-image">画像出力</span>
-            <span class="material-icons-round dropdown-arrow">keyboard_arrow_down</span>
           </button>
           <div class="dropdown-menu">
-            <button id="btn-export-png" class="dropdown-item">
-              <span class="material-icons-round">photo</span>
-              <span data-i18n="btn-export-png">PNG画像</span>
-            </button>
-            <button id="btn-export-svg" class="dropdown-item">
-              <span class="material-icons-round">brush</span>
-              <span data-i18n="btn-export-svg">SVG画像</span>
-            </button>
+            <button id="btn-export-png"><span class="material-icons-round">photo</span><span data-i18n="btn-export-png">PNG 画像</span></button>
+            <button id="btn-export-svg"><span class="material-icons-round">code</span><span data-i18n="btn-export-svg">SVG ベクター</span></button>
           </div>
         </div>
-        
+
         <div class="divider"></div>
-        
-        <button id="btn-fit" class="app-btn icon-only" data-i18n-title="btn-fit" title="全体表示"><span class="material-icons-round">fit_screen</span></button>
-        <button id="btn-center" class="app-btn icon-only" data-i18n-title="btn-center" title="中央寄せ"><span class="material-icons-round">filter_center_focus</span></button>
-        
-        <div class="divider"></div>
-        
-        <button id="btn-help" class="app-btn">
+
+        <button id="btn-fit" class="icon-btn" data-i18n-title="btn-fit" title="全体を表示（画面に合わせる）">
+          <span class="material-icons-round">fit_screen</span>
+        </button>
+        <button id="btn-center" class="icon-btn" data-i18n-title="btn-center" title="中央に戻す">
+          <span class="material-icons-round">filter_center_focus</span>
+        </button>
+
+        <button id="btn-help" class="icon-btn" data-i18n-title="btn-help" title="ヘルプ">
           <span class="material-icons-round">help_outline</span>
-          <span class="btn-text" data-i18n="btn-help">ヘルプ</span>
         </button>
       </div>
     </header>
 
-    <!-- Workspace Main -->
+    <!-- Main Workspace -->
     <main class="app-workspace">
-      <div id="canvas-container">
-        <!-- SVG Canvas -->
+      <!-- SVG Canvas for Mindmap -->
+      <div class="canvas-container" id="canvas-container">
         <svg id="mindmap-svg" width="100%" height="100%">
+          <!-- Definitions for patterns, gradients, filters -->
           <defs>
-            <!-- Background Grid Pattern -->
+            <!-- Grid Background -->
             <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
-              <circle cx="2" cy="2" r="1.5" fill="rgba(255, 255, 255, 0.07)" />
+              <circle cx="2" cy="2" r="1" fill="rgba(255, 255, 255, 0.07)" />
             </pattern>
             <!-- Shadow Filter for Nodes -->
             <filter id="node-shadow" x="-20%" y="-20%" width="140%" height="140%">
