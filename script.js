@@ -1103,9 +1103,14 @@ function fitToScreen() {
 
 // --- Tauri Native File API Helper ---
 function isTauri() {
-  return typeof window !== 'undefined' && 
-         typeof window.__TAURI__ !== 'undefined' && 
-         typeof window.__TAURI__.core !== 'undefined';
+  try {
+    return typeof window !== 'undefined' && 
+           window.__TAURI__ !== undefined && 
+           window.__TAURI__ !== null && 
+           window.__TAURI__.core !== undefined;
+  } catch (e) {
+    return false;
+  }
 }
 
 async function saveNative(asDialog = false) {
