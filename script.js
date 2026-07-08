@@ -1711,12 +1711,12 @@ function setupEventListeners() {
   });
 
   // Mouse wheel zoom
-  svg.addEventListener('wheel', (e) => {
+  canvasContainer.addEventListener('wheel', (e) => {
     e.preventDefault();
     const factor = e.deltaY < 0 ? 1.1 : 0.9;
     
     // Zoom centered on cursor position
-    const rect = svg.getBoundingClientRect();
+    const rect = canvasContainer.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
     
