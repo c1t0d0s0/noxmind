@@ -1840,54 +1840,72 @@ function setupEventListeners() {
 
   // Top Action Buttons
   const confirmModal = document.getElementById('confirm-modal');
+  const btnNew = document.getElementById('btn-new');
+  if (btnNew) {
+    btnNew.addEventListener('click', () => {
+      showConfirm(
+        t("confirm-new-title"),
+        t("confirm-new-msg"),
+        t("confirm-new-btn"),
+        () => {
+          mindMapData = JSON.parse(JSON.stringify(DEFAULT_MINDMAP));
+          activeNodeId = 'root';
+          saveToLocalStorage();
+          renderMindMap();
+          centerMindMap();
+        }
+      );
+    });
+  }
 
-  document.getElementById('btn-new').addEventListener('click', () => {
-    showConfirm(
-      t("confirm-new-title"),
-      t("confirm-new-msg"),
-      t("confirm-new-btn"),
-      () => {
-        mindMapData = JSON.parse(JSON.stringify(DEFAULT_MINDMAP));
-        activeNodeId = 'root';
-        saveToLocalStorage();
-        renderMindMap();
-        centerMindMap();
+  const btnCloseConfirm = document.getElementById('btn-close-confirm');
+  if (btnCloseConfirm && confirmModal) {
+    btnCloseConfirm.addEventListener('click', () => {
+      confirmModal.classList.remove('open');
+    });
+  }
+
+  const btnConfirmCancel = document.getElementById('btn-confirm-cancel');
+  if (btnConfirmCancel && confirmModal) {
+    btnConfirmCancel.addEventListener('click', () => {
+      confirmModal.classList.remove('open');
+    });
+  }
+
+  if (confirmModal) {
+    confirmModal.addEventListener('click', (e) => {
+      if (e.target === confirmModal) confirmModal.classList.remove('open');
+    });
+  }
+
+  const btnConfirmOk = document.getElementById('btn-confirm-ok');
+  if (btnConfirmOk && confirmModal) {
+    btnConfirmOk.addEventListener('click', () => {
+      confirmModal.classList.remove('open');
+      if (confirmCallback) {
+        confirmCallback();
+        confirmCallback = null;
       }
-    );
-  });
+    });
+  }
 
-  document.getElementById('btn-close-confirm').addEventListener('click', () => {
-    confirmModal.classList.remove('open');
-  });
-
-  document.getElementById('btn-confirm-cancel').addEventListener('click', () => {
-    confirmModal.classList.remove('open');
-  });
-
-  confirmModal.addEventListener('click', (e) => {
-    if (e.target === confirmModal) confirmModal.classList.remove('open');
-  });
-
-  document.getElementById('btn-confirm-ok').addEventListener('click', () => {
-    confirmModal.classList.remove('open');
-    if (confirmCallback) {
-      confirmCallback();
-      confirmCallback = null;
-    }
-  });
-
-  document.getElementById('btn-import').addEventListener('click', () => {
-    if (isTauri()) {
-      openNative();
-    } else {
-      fileInput.click();
-    }
-  });
-  fileInput.addEventListener('change', importJSON);
+  const btnImport = document.getElementById('btn-import');
+  if (btnImport) {
+    btnImport.addEventListener('click', () => {
+      if (isTauri()) {
+        openNative();
+      } else {
+        if (fileInput) fileInput.click();
+      }
+    });
+  }
+  if (fileInput) {
+    fileInput.addEventListener('change', importJSON);
+  }
   
   // Save dropdown toggle & actions depending on Tauri/Web environment
   const saveDropdownToggle = document.getElementById('btn-save-dropdown');
-  const saveDropdownMenu = saveDropdownToggle ? saveDropdownToggle.nextElementSibling : null;
+  const saveDropdownMenu = saveDropdownToggle ? (document.querySelector('#btn-save-dropdown + .dropdown-menu') || saveDropdownToggle.nextElementSibling) : null;
 
   if (!isTauri()) {
     // Web Mode: Turn dropdown button into a direct export button
@@ -1909,7 +1927,8 @@ function setupEventListeners() {
     if (saveDropdownToggle) {
       saveDropdownToggle.addEventListener('click', (e) => {
         e.stopPropagation();
-        saveDropdownToggle.closest('.dropdown').classList.toggle('open');
+        const dropEl = saveDropdownToggle.closest('.dropdown');
+        if (dropEl) dropEl.classList.toggle('open');
       });
     }
 
@@ -1934,10 +1953,12 @@ function setupEventListeners() {
 
   // Image export dropdown toggle
   const dropdownToggle = document.getElementById('btn-export-image');
-  dropdownToggle.addEventListener('click', (e) => {
-    e.stopPropagation();
-    dropdownToggle.closest('.dropdown').classList.toggle('open');
-  });
+  if (dropdownToggle) {
+    dropdownToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdownToggle.closest('.dropdown').classList.toggle('open');
+    });
+  }
   
   // Close dropdown on click outside and dismiss context menu
   window.addEventListener('click', (e) => {
@@ -1948,9 +1969,12 @@ function setupEventListeners() {
   });
 
   // Prevent closing menu when clicking on the menu itself
-  document.getElementById('context-menu').addEventListener('click', (e) => {
-    e.stopPropagation();
-  });
+  const contextMenuEl = document.getElementById('context-menu');
+  if (contextMenuEl) {
+    contextMenuEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  }
 
   // Prevent closing canvas menu when clicking on it
   const canvasContextMenu = document.getElementById('canvas-context-menu');
@@ -1972,29 +1996,38 @@ function setupEventListeners() {
   });
 
   // Context Menu Actions
-  document.getElementById('ctx-add-child').addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (contextMenuNodeId) {
-      addNewChild(contextMenuNodeId);
-    }
-    hideContextMenu();
-  });
+  const ctxAddChild = document.getElementById('ctx-add-child');
+  if (ctxAddChild) {
+    ctxAddChild.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (contextMenuNodeId) {
+        addNewChild(contextMenuNodeId);
+      }
+      hideContextMenu();
+    });
+  }
 
-  document.getElementById('ctx-add-sibling').addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (contextMenuNodeId) {
-      addNewSibling(contextMenuNodeId);
-    }
-    hideContextMenu();
-  });
+  const ctxAddSibling = document.getElementById('ctx-add-sibling');
+  if (ctxAddSibling) {
+    ctxAddSibling.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (contextMenuNodeId) {
+        addNewSibling(contextMenuNodeId);
+      }
+      hideContextMenu();
+    });
+  }
 
-  document.getElementById('ctx-delete-node').addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (contextMenuNodeId) {
-      deleteNode(contextMenuNodeId);
-    }
-    hideContextMenu();
-  });
+  const ctxDeleteNode = document.getElementById('ctx-delete-node');
+  if (ctxDeleteNode) {
+    ctxDeleteNode.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (contextMenuNodeId) {
+        deleteNode(contextMenuNodeId);
+      }
+      hideContextMenu();
+    });
+  }
 
   // Canvas Context Menu Actions
   const ctxAddRootChild = document.getElementById('ctx-add-root-child');
@@ -2066,11 +2099,17 @@ function setupEventListeners() {
     });
   }
 
-  document.getElementById('btn-export-png').addEventListener('click', exportPNG);
-  document.getElementById('btn-export-svg').addEventListener('click', exportSVG);
+  const btnExportPng = document.getElementById('btn-export-png');
+  if (btnExportPng) btnExportPng.addEventListener('click', exportPNG);
 
-  document.getElementById('btn-fit').addEventListener('click', fitToScreen);
-  document.getElementById('btn-center').addEventListener('click', centerMindMap);
+  const btnExportSvg = document.getElementById('btn-export-svg');
+  if (btnExportSvg) btnExportSvg.addEventListener('click', exportSVG);
+
+  const btnFit = document.getElementById('btn-fit');
+  if (btnFit) btnFit.addEventListener('click', fitToScreen);
+
+  const btnCenter = document.getElementById('btn-center');
+  if (btnCenter) btnCenter.addEventListener('click', centerMindMap);
 
   // Layout mode toggle listener
   const btnLayoutMode = document.getElementById('btn-layout-mode');
@@ -2084,37 +2123,63 @@ function setupEventListeners() {
   }
 
   // Zoom floats
-  document.getElementById('btn-zoom-in').addEventListener('click', () => zoom(1.1));
-  document.getElementById('btn-zoom-out').addEventListener('click', () => zoom(0.9));
+  const btnZoomIn = document.getElementById('btn-zoom-in');
+  if (btnZoomIn) btnZoomIn.addEventListener('click', () => zoom(1.1));
+
+  const btnZoomOut = document.getElementById('btn-zoom-out');
+  if (btnZoomOut) btnZoomOut.addEventListener('click', () => zoom(0.9));
 
   // Sidebar Controls
-  document.getElementById('btn-close-sidebar').addEventListener('click', () => {
-    sidebar.classList.remove('open');
-  });
+  const btnCloseSidebar = document.getElementById('btn-close-sidebar');
+  if (btnCloseSidebar) {
+    btnCloseSidebar.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+    });
+  }
 
-  document.getElementById('btn-add-child').addEventListener('click', () => addNewChild());
-  document.getElementById('btn-add-sibling').addEventListener('click', () => addNewSibling());
-  document.getElementById('btn-delete-node').addEventListener('click', () => deleteNode());
+  const btnAddChild = document.getElementById('btn-add-child');
+  if (btnAddChild) btnAddChild.addEventListener('click', () => addNewChild());
+
+  const btnAddSibling = document.getElementById('btn-add-sibling');
+  if (btnAddSibling) btnAddSibling.addEventListener('click', () => addNewSibling());
+
+  const btnDeleteNode = document.getElementById('btn-delete-node');
+  if (btnDeleteNode) btnDeleteNode.addEventListener('click', () => deleteNode());
 
   // Sidebar Color Pickers
-  document.getElementById('text-color-picker').addEventListener('input', (e) => {
-    updateActiveNodeStyle('color', e.target.value);
-  });
-  document.getElementById('bg-color-picker').addEventListener('input', (e) => {
-    updateActiveNodeStyle('bgColor', e.target.value);
-  });
-  document.getElementById('branch-color-picker').addEventListener('input', (e) => {
-    updateActiveNodeStyle('branchColor', e.target.value);
-  });
+  const textColorPicker = document.getElementById('text-color-picker');
+  if (textColorPicker) {
+    textColorPicker.addEventListener('input', (e) => {
+      updateActiveNodeStyle('color', e.target.value);
+    });
+  }
 
-  document.getElementById('chk-borderless').addEventListener('change', (e) => {
-    defaultBorderless = e.target.checked;
-    updateActiveNodeStyle('borderless', e.target.checked);
-  });
+  const bgColorPicker = document.getElementById('bg-color-picker');
+  if (bgColorPicker) {
+    bgColorPicker.addEventListener('input', (e) => {
+      updateActiveNodeStyle('bgColor', e.target.value);
+    });
+  }
+
+  const branchColorPicker = document.getElementById('branch-color-picker');
+  if (branchColorPicker) {
+    branchColorPicker.addEventListener('input', (e) => {
+      updateActiveNodeStyle('branchColor', e.target.value);
+    });
+  }
+
+  const chkBorderless = document.getElementById('chk-borderless');
+  if (chkBorderless) {
+    chkBorderless.addEventListener('change', (e) => {
+      defaultBorderless = e.target.checked;
+      updateActiveNodeStyle('borderless', e.target.checked);
+    });
+  }
 
   // Sidebar Text Input change listener
   const nodeTextInput = document.getElementById('node-text-input');
-  nodeTextInput.addEventListener('input', (e) => {
+  if (nodeTextInput) {
+    nodeTextInput.addEventListener('input', (e) => {
     const node = findNodeById(mindMapData, activeNodeId);
     if (node) {
       node.text = e.target.value;
