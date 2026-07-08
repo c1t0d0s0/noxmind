@@ -2180,18 +2180,19 @@ function setupEventListeners() {
   const nodeTextInput = document.getElementById('node-text-input');
   if (nodeTextInput) {
     nodeTextInput.addEventListener('input', (e) => {
-    const node = findNodeById(mindMapData, activeNodeId);
-    if (node) {
-      node.text = e.target.value;
-      saveToLocalStorage();
-      
-      const span = document.getElementById(`text-${node.id}`);
-      if (span) {
-        span.textContent = node.text;
+      const node = findNodeById(mindMapData, activeNodeId);
+      if (node) {
+        node.text = e.target.value;
+        saveToLocalStorage();
+        
+        const span = document.getElementById(`text-${node.id}`);
+        if (span) {
+          span.textContent = node.text;
+        }
+        renderMindMap();
       }
-      renderMindMap();
-    }
-  });
+    });
+  }
 
   // Preset Colors Click Handlers
   setupPresetColors('text-presets', 'color');
