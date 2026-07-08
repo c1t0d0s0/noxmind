@@ -60,6 +60,12 @@ const TRANSLATIONS = {
     "license-app-title": "NoxMind ライセンス",
     "license-third-party-title": "サードパーティのソフトウェア",
     "license-third-party-desc": "NoxMind は以下のオープンソースプロジェクトを利用しています。",
+    "ctx-expand-all": "すべて展開",
+    "ctx-collapse-all": "すべて折りたたむ",
+    "ctx-add-root-child": "新規ノードを追加",
+    "ctx-center-view": "中央に戻す",
+    "ctx-fit-screen": "全体を表示",
+    "ctx-new-map": "新規作成",
     // Confirmations / Dialogs
     "confirm-dialog-title": "確認",
     "confirm-new-title": "新規作成の確認",
@@ -133,6 +139,12 @@ const TRANSLATIONS = {
     "license-app-title": "NoxMind License",
     "license-third-party-title": "Third-Party Software",
     "license-third-party-desc": "NoxMind uses the following open source projects.",
+    "ctx-expand-all": "Expand All",
+    "ctx-collapse-all": "Collapse All",
+    "ctx-add-root-child": "Add Node",
+    "ctx-center-view": "Center View",
+    "ctx-fit-screen": "Fit to Screen",
+    "ctx-new-map": "New Map",
     // Confirmations / Dialogs
     "confirm-dialog-title": "Confirmation",
     "confirm-new-title": "Confirm New Canvas",
@@ -333,6 +345,10 @@ function moveNodeToNewParent(nodeId, newParentId) {
 
 // Show custom context menu for a node
 function showContextMenu(x, y, nodeId) {
+  // Hide canvas menu first
+  const canvasMenu = document.getElementById('canvas-context-menu');
+  if (canvasMenu) canvasMenu.style.display = 'none';
+
   const menu = document.getElementById('context-menu');
   const ctxAddSibling = document.getElementById('ctx-add-sibling');
   const ctxDeleteNode = document.getElementById('ctx-delete-node');
@@ -361,11 +377,33 @@ function showContextMenu(x, y, nodeId) {
   menu.style.top = `${posY}px`;
 }
 
+// Show custom context menu for canvas background
+function showCanvasContextMenu(x, y) {
+  hideContextMenu();
+  const menu = document.getElementById('canvas-context-menu');
+  if (!menu) return;
+
+  menu.style.display = 'block';
+
+  const menuWidth = menu.offsetWidth || 180;
+  const menuHeight = menu.offsetHeight || 90;
+
+  const posX = (x + menuWidth > window.innerWidth) ? x - menuWidth : x;
+  const posY = (y + menuHeight > window.innerHeight) ? y - menuHeight : y;
+
+  menu.style.left = `${posX}px`;
+  menu.style.top = `${posY}px`;
+}
+
 // Hide custom context menu
 function hideContextMenu() {
   const menu = document.getElementById('context-menu');
   if (menu) {
     menu.style.display = 'none';
+  }
+  const canvasMenu = document.getElementById('canvas-context-menu');
+  if (canvasMenu) {
+    canvasMenu.style.display = 'none';
   }
   contextMenuNodeId = null;
 }
@@ -393,7 +431,7 @@ function createInvisibleNodes(node, depth = 0) {
   fo.appendChild(div);
   nodesGroup.appendChild(fo);
 
-  if (node.children) {
+  if (node.children && !node.collapsed) {
     node.children.forEach(child => createInvisibleNodes(child, depth + 1));
   }
 }
@@ -442,7 +480,7 @@ function measureNodeHeights(node) {
   const measureFo = document.getElementById(`measure-${node.id}`);
   if (measureFo) measureFo.remove();
 
-  if (node.children) {
+  if (node.children && !node.collapsed) {
     node.children.forEach(child => measureNodeHeights(child));
   }
 }
@@ -451,7 +489,7 @@ function measureNodeHeights(node) {
  * Calculate Subtree Heights recursively
  */
 function calculateSubtreeHeights(node) {
-  if (!node.children || node.children.length === 0) {
+  if (!node.children || node.children.length === 0 || node.collapsed) {
     node.subtreeHeight = node.height || 40;
     return node.subtreeHeight;
   }
@@ -487,7 +525,7 @@ function layoutSubtree(node, parentX, parentY, direction) {
 
     layoutChildren(rights, 0, 0, 1, node);
     layoutChildren(lefts, 0, 0, -1, node);
-  } else {
+  } else if (!node.collapsed) {
     layoutChildren(node.children, node.x, node.y, direction, node);
   }
 }
@@ -510,7 +548,9 @@ function layoutChildren(children, parentX, parentY, direction, parentNode) {
     currentY += child.subtreeHeight + GAP_Y;
 
     // Recurse children
-    layoutSubtree(child, child.x, child.y, direction);
+    if (!child.collapsed) {
+      layoutSubtree(child, child.x, child.y, direction);
+    }
   });
 }
 
@@ -566,7 +606,7 @@ function renderMindMap() {
  * Draw connection lines (Bézier curves)
  */
 function renderConnections(node) {
-  if (!node.children || node.children.length === 0) return;
+  if (!node.children || node.children.length === 0 || node.collapsed) return;
 
   node.children.forEach(child => {
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -605,7 +645,9 @@ function renderConnections(node) {
     connectionsGroup.appendChild(path);
     
     // Recurse children
-    renderConnections(child);
+    if (!child.collapsed) {
+      renderConnections(child);
+    }
   });
 }
 
@@ -637,8 +679,6 @@ function renderNode(node, depth) {
   } else {
     div.style.borderColor = '#89b4fa';
   }
-
-
   
   const span = document.createElement('span');
   span.className = 'node-text';
@@ -646,6 +686,30 @@ function renderNode(node, depth) {
   span.textContent = node.text;
   
   div.appendChild(span);
+
+  // Render toggle button if node has children and is not the root node
+  if (node.id !== 'root' && node.children && node.children.length > 0) {
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'node-toggle-btn';
+    
+    const dir = getNodeDirection(node.id);
+    toggleBtn.classList.add(dir === 1 ? 'dir-right' : 'dir-left');
+    
+    if (node.collapsed) {
+      toggleBtn.classList.add('collapsed');
+      toggleBtn.innerHTML = '<span class="material-icons-round">add</span>';
+    } else {
+      toggleBtn.innerHTML = '<span class="material-icons-round">remove</span>';
+    }
+    
+    toggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleNodeCollapse(node.id);
+    });
+    
+    div.appendChild(toggleBtn);
+  }
+
   fo.appendChild(div);
   nodesGroup.appendChild(fo);
 
@@ -687,7 +751,7 @@ function renderNode(node, depth) {
   });
 
   // Render children
-  if (node.children) {
+  if (node.children && !node.collapsed) {
     node.children.forEach(child => renderNode(child, depth + 1));
   }
 }
@@ -1718,6 +1782,25 @@ function setupEventListeners() {
     e.stopPropagation();
   });
 
+  // Prevent closing canvas menu when clicking on it
+  const canvasContextMenu = document.getElementById('canvas-context-menu');
+  if (canvasContextMenu) {
+    canvasContextMenu.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  }
+
+  // Handle right-click on SVG (Canvas background)
+  svg.addEventListener('contextmenu', (e) => {
+    if (isEditing) return;
+    
+    // If not clicking on a node, show canvas menu
+    if (!e.target.closest('.mindmap-node')) {
+      e.preventDefault();
+      showCanvasContextMenu(e.clientX, e.clientY);
+    }
+  });
+
   // Context Menu Actions
   document.getElementById('ctx-add-child').addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1742,6 +1825,76 @@ function setupEventListeners() {
     }
     hideContextMenu();
   });
+
+  // Canvas Context Menu Actions
+  const ctxAddRootChild = document.getElementById('ctx-add-root-child');
+  if (ctxAddRootChild) {
+    ctxAddRootChild.addEventListener('click', (e) => {
+      e.stopPropagation();
+      addNewChild('root');
+      hideContextMenu();
+    });
+  }
+
+  const ctxExpandAll = document.getElementById('ctx-expand-all');
+  if (ctxExpandAll) {
+    ctxExpandAll.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setAllNodesCollapseState(mindMapData, false);
+      renderMindMap();
+      saveToLocalStorage();
+      hideContextMenu();
+    });
+  }
+
+  const ctxCollapseAll = document.getElementById('ctx-collapse-all');
+  if (ctxCollapseAll) {
+    ctxCollapseAll.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setAllNodesCollapseState(mindMapData, true);
+      renderMindMap();
+      saveToLocalStorage();
+      hideContextMenu();
+    });
+  }
+
+  const ctxCenterView = document.getElementById('ctx-center-view');
+  if (ctxCenterView) {
+    ctxCenterView.addEventListener('click', (e) => {
+      e.stopPropagation();
+      centerMindMap();
+      hideContextMenu();
+    });
+  }
+
+  const ctxFitScreen = document.getElementById('ctx-fit-screen');
+  if (ctxFitScreen) {
+    ctxFitScreen.addEventListener('click', (e) => {
+      e.stopPropagation();
+      fitToScreen();
+      hideContextMenu();
+    });
+  }
+
+  const ctxNewMap = document.getElementById('ctx-new-map');
+  if (ctxNewMap) {
+    ctxNewMap.addEventListener('click', (e) => {
+      e.stopPropagation();
+      hideContextMenu();
+      showConfirm(
+        t("confirm-new-title"),
+        t("confirm-new-msg"),
+        t("confirm-new-btn"),
+        () => {
+          mindMapData = JSON.parse(JSON.stringify(DEFAULT_MINDMAP));
+          activeNodeId = 'root';
+          saveToLocalStorage();
+          renderMindMap();
+          centerMindMap();
+        }
+      );
+    });
+  }
 
   document.getElementById('btn-export-png').addEventListener('click', exportPNG);
   document.getElementById('btn-export-svg').addEventListener('click', exportSVG);
@@ -1997,5 +2150,25 @@ window.addEventListener('scroll', (e) => {
     }
   }
 }, { capture: true, passive: true });
+
+// Toggle Node Collapse state
+function toggleNodeCollapse(id) {
+  const node = findNodeById(mindMapData, id);
+  if (node) {
+    node.collapsed = !node.collapsed;
+    renderMindMap();
+    saveToLocalStorage();
+  }
+}
+
+// Recursively set collapse state for all descendants
+function setAllNodesCollapseState(node, state) {
+  if (node.id !== 'root') {
+    node.collapsed = state;
+  }
+  if (node.children) {
+    node.children.forEach(child => setAllNodesCollapseState(child, state));
+  }
+}
 
 
