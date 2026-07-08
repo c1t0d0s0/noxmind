@@ -1103,3 +1103,42 @@ kbd {
   display: block;
 }
 
+/* Toggle Button for Folding Nodes */
+.node-toggle-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: var(--bg-surface);
+  border: 1.5px solid var(--accent);
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  padding: 0;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--shadow-sm);
+}
+
+.node-toggle-btn:hover {
+  background-color: var(--accent);
+  color: var(--bg-surface);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.node-toggle-btn.dir-right {
+  right: -10px;
+}
+
+.node-toggle-btn.dir-left {
+  left: -10px;
+}
+
+.node-toggle-btn span {
+  font-size: 14px;
+}
+
