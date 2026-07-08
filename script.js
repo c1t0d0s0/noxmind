@@ -68,6 +68,12 @@ const TRANSLATIONS = {
     "ctx-new-map": "新規作成",
     "btn-layout-mode-title": "配置切り替え (左右均等 / 右側のみ)",
     "btn-layout-mode": "配置方向",
+    "btn-save-overwrite": "上書き保存",
+    "btn-save-as": "名前を付けて保存",
+    "btn-save-dropdown-title": "保存メニューを開く",
+    "toast-saved": "保存しました",
+    "toast-save-failed": "保存に失敗しました",
+    "toast-import-failed": "読み込みに失敗しました",
     // Confirmations / Dialogs
     "confirm-dialog-title": "確認",
     "confirm-new-title": "新規作成の確認",
@@ -149,6 +155,12 @@ const TRANSLATIONS = {
     "ctx-new-map": "New Map",
     "btn-layout-mode-title": "Toggle Layout (Balanced / Right-Only)",
     "btn-layout-mode": "Layout",
+    "btn-save-overwrite": "Save",
+    "btn-save-as": "Save As...",
+    "btn-save-dropdown-title": "Open Save Menu",
+    "toast-saved": "Saved successfully",
+    "toast-save-failed": "Failed to save file",
+    "toast-import-failed": "Failed to load file",
     // Confirmations / Dialogs
     "confirm-dialog-title": "Confirmation",
     "confirm-new-title": "Confirm New Canvas",
@@ -227,6 +239,7 @@ function setLocalStorageData(key, value) {
 // --- Application State ---
 let mindMapData = getLocalStorageData('noxmind_data', DEFAULT_MINDMAP);
 let layoutMode = getLocalStorageData('noxmind_layout_mode', 'balanced');
+let currentFilePath = null;
 let activeNodeId = 'root';
 let isEditing = false;
 let defaultBorderless = false;
@@ -1088,6 +1101,92 @@ function fitToScreen() {
   updateViewportTransform();
 }
 
+// --- Tauri Native File API Helper ---
+function isTauri() {
+  return typeof window !== 'undefined' && typeof window.__TAURI__ !== 'undefined';
+}
+
+async function saveNative(asDialog = false) {
+  const dataStr = JSON.stringify(mindMapData, null, 2);
+  
+  try {
+    if (!asDialog && currentFilePath) {
+      await window.__TAURI__.core.invoke('save_file', { path: currentFilePath, data: dataStr });
+      showToast(t('toast-saved'));
+    } else {
+      const path = await window.__TAURI__.core.invoke('save_file_dialog', { data: dataStr });
+      if (path) {
+        currentFilePath = path;
+        updateFileNameDisplay();
+        showToast(t('toast-saved'));
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    showToast(t('toast-save-failed') + ': ' + err);
+  }
+}
+
+async function openNative() {
+  try {
+    const result = await window.__TAURI__.core.invoke('open_file_dialog');
+    if (result) {
+      const parsedData = JSON.parse(result.content);
+      if (parsedData && parsedData.id === 'root' && typeof parsedData.text === 'string') {
+        mindMapData = parsedData;
+        currentFilePath = result.path;
+        activeNodeId = 'root';
+        saveToLocalStorage();
+        updateFileNameDisplay();
+        renderMindMap();
+        fitToScreen();
+        showToast(t('toast-saved'));
+      } else {
+        showToast(t('toast-import-failed'));
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    showToast(t('toast-import-failed') + ': ' + err);
+  }
+}
+
+function updateFileNameDisplay() {
+  const el = document.getElementById('current-file-name');
+  if (!el) return;
+  if (currentFilePath) {
+    const parts = currentFilePath.split(/[/\\]/);
+    const fileName = parts[parts.length - 1];
+    el.textContent = `[ ${fileName} ]`;
+    el.style.display = 'inline-block';
+    el.setAttribute('title', currentFilePath);
+  } else {
+    el.textContent = '';
+    el.style.display = 'none';
+  }
+}
+
+function showToast(message) {
+  const existing = document.querySelector('.toast-notification');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.className = 'toast-notification';
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('show');
+  }, 50);
+
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => {
+      toast.remove();
+    }, 400);
+  }, 3000);
+}
+
 // --- Import & Export Code ---
 
 // Export mind map data as JSON
@@ -1770,11 +1869,62 @@ function setupEventListeners() {
     }
   });
 
-  document.getElementById('btn-import').addEventListener('click', () => fileInput.click());
+  document.getElementById('btn-import').addEventListener('click', () => {
+    if (isTauri()) {
+      openNative();
+    } else {
+      fileInput.click();
+    }
+  });
   fileInput.addEventListener('change', importJSON);
   
-  document.getElementById('btn-export').addEventListener('click', exportJSON);
-  
+  // Save dropdown toggle & actions depending on Tauri/Web environment
+  const saveDropdownToggle = document.getElementById('btn-save-dropdown');
+  const saveDropdownMenu = saveDropdownToggle ? saveDropdownToggle.nextElementSibling : null;
+
+  if (!isTauri()) {
+    // Web Mode: Turn dropdown button into a direct export button
+    if (saveDropdownToggle) {
+      saveDropdownToggle.classList.remove('dropdown-toggle');
+      // Set to normal save title
+      saveDropdownToggle.setAttribute('title', t('btn-export-title'));
+      saveDropdownToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        exportJSON();
+      });
+    }
+    // Remove the menu container from DOM to avoid confusion
+    if (saveDropdownMenu) {
+      saveDropdownMenu.remove();
+    }
+  } else {
+    // Tauri Mode: Keep dropdown menu functionality
+    if (saveDropdownToggle) {
+      saveDropdownToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        saveDropdownToggle.closest('.dropdown').classList.toggle('open');
+      });
+    }
+
+    const btnSaveOverwrite = document.getElementById('btn-save-overwrite');
+    if (btnSaveOverwrite) {
+      btnSaveOverwrite.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open'));
+        saveNative(false);
+      });
+    }
+
+    const btnSaveAs = document.getElementById('btn-save-as');
+    if (btnSaveAs) {
+      btnSaveAs.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open'));
+        saveNative(true);
+      });
+    }
+  }
+
   // Image export dropdown toggle
   const dropdownToggle = document.getElementById('btn-export-image');
   dropdownToggle.addEventListener('click', (e) => {
@@ -1784,7 +1934,7 @@ function setupEventListeners() {
   
   // Close dropdown on click outside and dismiss context menu
   window.addEventListener('click', (e) => {
-    if (!e.target.closest('#btn-export-image')) {
+    if (!e.target.closest('#btn-export-image') && !e.target.closest('#btn-save-dropdown')) {
       document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open'));
     }
     hideContextMenu();

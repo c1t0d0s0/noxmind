@@ -1148,3 +1148,49 @@ kbd {
   font-size: 14px;
 }
 
+/* Toast Notification Style */
+.toast-notification {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background-color: rgba(29, 31, 43, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: var(--shadow-lg);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toast-notification.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Current File Name Style */
+.current-file-name {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-left: 10px;
+  padding: 4px 8px;
+  background-color: var(--bg-element);
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  display: none;
+}
+

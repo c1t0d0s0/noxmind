@@ -19,6 +19,7 @@
       <div class="header-logo">
         <span class="material-icons-round logo-icon">psychology</span>
         <h1>NoxMind</h1>
+        <span id="current-file-name" class="current-file-name"></span>
       </div>
       <div class="header-actions">
         <button id="btn-new" class="icon-btn" data-i18n-title="btn-new-title" title="新規作成">
@@ -31,10 +32,22 @@
         </button>
         <input type="file" id="file-input" accept=".json" style="display: none;">
         
-        <button id="btn-export" class="icon-btn" data-i18n-title="btn-export-title" title="データを保存する (.json)">
-          <span class="material-icons-round">save</span>
-          <span class="btn-text" data-i18n="btn-export">保存</span>
-        </button>
+        <div class="dropdown">
+          <button id="btn-save-dropdown" class="icon-btn dropdown-toggle" data-i18n-title="btn-save-dropdown-title" title="保存メニューを開く">
+            <span class="material-icons-round">save</span>
+            <span class="btn-text" data-i18n="btn-export">保存</span>
+          </button>
+          <div class="dropdown-menu">
+            <button id="btn-save-overwrite">
+              <span class="material-icons-round">save</span>
+              <span data-i18n="btn-save-overwrite">上書き保存</span>
+            </button>
+            <button id="btn-save-as">
+              <span class="material-icons-round">save_as</span>
+              <span data-i18n="btn-save-as">名前を付けて保存</span>
+            </button>
+          </div>
+        </div>
         
         <div class="divider"></div>
         
