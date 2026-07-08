@@ -4,10 +4,176 @@
  */
 
 
+// --- Localization (i18n) ---
+const TRANSLATIONS = {
+  ja: {
+    // Header
+    "btn-new": "新規",
+    "btn-import": "開く",
+    "btn-export": "保存",
+    "btn-export-image": "画像出力",
+    "btn-export-png": "PNG画像",
+    "btn-export-svg": "SVG画像",
+    "btn-help": "ヘルプ",
+    "btn-fit": "全体表示",
+    "btn-center": "中央寄せ",
+    "zoom-in": "拡大",
+    "zoom-out": "縮小",
+    // Sidebar
+    "sidebar-title": "ノードの編集",
+    "label-text": "テキストの編集",
+    "placeholder-text": "選択されていません",
+    "label-text-color": "テキストの色",
+    "label-bg-color": "背景の色",
+    "label-branch-color": "ブランチの色 (接続線)",
+    "label-borderless": "枠なし (テキストのみ)",
+    "sidebar-style": "スタイル",
+    "sidebar-actions": "ノード操作",
+    "btn-sidebar-add-child": "子ノード追加 (Tab)",
+    "btn-sidebar-add-sibling": "同階層追加 (Enter)",
+    "btn-sidebar-delete": "ノード削除 (Del)",
+    "color-custom": "カスタム",
+    // Help Modal
+    "help-title": "Mindy の使い方",
+    "help-basic-ops": "基本操作",
+    "help-zoom": "ズーム:",
+    "help-zoom-desc": "マウスホイールを回す、または画面右下の「+」「-」ボタンを押します。",
+    "help-scroll": "スクロール:",
+    "help-scroll-desc": "背景をドラッグすると画面を移動できます。",
+    "help-select": "ノードの選択:",
+    "help-select-desc": "ノードをクリックすると選択できます。",
+    "help-edit": "ノードの編集:",
+    "help-edit-desc": "選択されたノードをダブルクリックするとテキストを変更できます。",
+    "help-menu": "メニュー操作:",
+    "help-menu-desc": "ノードを右クリックすると、追加・削除が簡単に行えるメニューが表示されます。",
+    "help-shortcuts": "キーボードショートカット",
+    "help-col-key": "キー",
+    "help-col-action": "アクション",
+    "help-action-tab": "選択したノードに子ノードを追加",
+    "help-action-enter": "選択したノードと同階層のノードを追加（ルートの場合は子ノード）",
+    "help-action-delete": "選択したノードを削除（ルートは削除できません）",
+    "help-action-edit": "選択したノードの編集を開始（編集完了は Enter または外をクリック）",
+    "help-action-esc": "編集をキャンセル / 選択を解除",
+    "help-action-arrows": "ノード間をキーボードで移動",
+    // Confirmations / Dialogs
+    "confirm-dialog-title": "確認",
+    "confirm-new-title": "新規作成の確認",
+    "confirm-new-msg": "現在編集中のマインドマップは破棄されます。<br>本当に新しく作成しますか？",
+    "confirm-new-btn": "新規作成",
+    "confirm-delete-title": "ノード削除の確認",
+    "confirm-delete-msg": "選択したノードと、そのすべての子ノードを削除します。<br>本当に削除しますか？",
+    "confirm-delete-btn": "削除",
+    "btn-cancel": "キャンセル",
+    "btn-ok": "確定",
+    "default-node-text": "ノード",
+    "central-theme": "セントラルテーマ",
+    "confirm-err-title": "削除できません",
+    "confirm-err-root": "セントラルテーマ（ルート）は削除できません。",
+    // Context Menu
+    "ctx-add-child": "子ノードを追加",
+    "ctx-add-sibling": "同階層を追加",
+    "ctx-delete-node": "ノードを削除"
+  },
+  en: {
+    // Header
+    "btn-new": "New",
+    "btn-import": "Open",
+    "btn-export": "Save",
+    "btn-export-image": "Export Image",
+    "btn-export-png": "PNG Image",
+    "btn-export-svg": "SVG Image",
+    "btn-help": "Help",
+    "btn-fit": "Fit to Screen",
+    "btn-center": "Center View",
+    "zoom-in": "Zoom In",
+    "zoom-out": "Zoom Out",
+    // Sidebar
+    "sidebar-title": "Edit Node",
+    "label-text": "Edit Text",
+    "placeholder-text": "No node selected",
+    "label-text-color": "Text Color",
+    "label-bg-color": "Background Color",
+    "label-branch-color": "Branch Color (Lines)",
+    "label-borderless": "Borderless (Text Only)",
+    "sidebar-style": "Style",
+    "sidebar-actions": "Node Operations",
+    "btn-sidebar-add-child": "Add Child (Tab)",
+    "btn-sidebar-add-sibling": "Add Sibling (Enter)",
+    "btn-sidebar-delete": "Delete Node (Del)",
+    "color-custom": "Custom",
+    // Help Modal
+    "help-title": "How to use Mindy",
+    "help-basic-ops": "Basic Operations",
+    "help-zoom": "Zoom:",
+    "help-zoom-desc": "Scroll the mouse wheel, or press the '+' / '-' buttons in the bottom right corner.",
+    "help-scroll": "Scroll:",
+    "help-scroll-desc": "Drag the background to pan the canvas.",
+    "help-select": "Select Node:",
+    "help-select-desc": "Click a node to select it.",
+    "help-edit": "Edit Node:",
+    "help-edit-desc": "Double-click a selected node to edit its text.",
+    "help-menu": "Menu Operation:",
+    "help-menu-desc": "Right-click a node to open a quick action menu for adding or deleting nodes.",
+    "help-shortcuts": "Keyboard Shortcuts",
+    "help-col-key": "Key",
+    "help-col-action": "Action",
+    "help-action-tab": "Add a child node to the selected node",
+    "help-action-enter": "Add a sibling node (or a child if root is selected)",
+    "help-action-delete": "Delete the selected node (Root cannot be deleted)",
+    "help-action-edit": "Start editing the selected node (Press Enter or click outside to finish)",
+    "help-action-esc": "Cancel editing / Deselect node",
+    "help-action-arrows": "Navigate selection between nodes",
+    // Confirmations / Dialogs
+    "confirm-dialog-title": "Confirmation",
+    "confirm-new-title": "Confirm New Canvas",
+    "confirm-new-msg": "Your current mind map will be discarded.<br>Are you sure you want to create a new one?",
+    "confirm-new-btn": "Create New",
+    "confirm-delete-title": "Confirm Node Deletion",
+    "confirm-delete-msg": "This will delete the selected node and all its child nodes.<br>Are you sure you want to delete?",
+    "confirm-delete-btn": "Delete",
+    "btn-cancel": "Cancel",
+    "btn-ok": "OK",
+    "default-node-text": "Node",
+    "central-theme": "Central Theme",
+    "confirm-dialog-title": "Confirmation",
+    "confirm-err-title": "Cannot Delete",
+    "confirm-err-root": "The Central Theme (root) cannot be deleted.",
+    // Context Menu
+    "ctx-add-child": "Add Child Node",
+    "ctx-add-sibling": "Add Sibling Node",
+    "ctx-delete-node": "Delete Node"
+  }
+};
+
+const systemLanguage = (navigator.language || navigator.userLanguage || 'en').startsWith('ja') ? 'ja' : 'en';
+
+function t(key) {
+  return (TRANSLATIONS[systemLanguage] && TRANSLATIONS[systemLanguage][key]) || TRANSLATIONS['en'][key] || key;
+}
+
+function applyTranslations() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+      el.value = t(key);
+    } else {
+      el.innerHTML = t(key);
+    }
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    el.setAttribute('placeholder', t(key));
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.getAttribute('data-i18n-title');
+    el.setAttribute('title', t(key));
+  });
+}
+
 // --- Default Data Structure ---
 const DEFAULT_MINDMAP = {
   id: "root",
-  text: "セントラルテーマ",
+  text: t('central-theme'),
   color: "#ffffff",
   bgColor: "#1e1e2e",
   branchColor: "#89b4fa",
@@ -226,7 +392,7 @@ function createInvisibleNodes(node, depth = 0) {
  * Helper to calculate node width dynamically based on text length (supporting manual breaks)
  */
 function getNodeWidth(node) {
-  const text = node.text || "ノード";
+  const text = node.text || t('default-node-text');
   const lines = text.split('\n');
   let maxLineScore = 0;
   
@@ -595,7 +761,7 @@ function finishEditing(id = activeNodeId) {
   const nodeDiv = span.closest('.mindmap-node');
   if (nodeDiv) nodeDiv.classList.remove('editing');
 
-  const newText = span.innerText.trim() || "ノード";
+  const newText = span.innerText.trim() || t('default-node-text');
   const node = findNodeById(mindMapData, id);
   if (node && node.text !== newText) {
     node.text = newText;
@@ -694,7 +860,7 @@ function showConfirm(title, message, okText, onConfirm, isAlert = false) {
 
 function deleteNode(nodeId = activeNodeId) {
   if (nodeId === 'root') {
-    showConfirm("削除できません", "セントラルテーマ（ルート）は削除できません。", "OK", null, true);
+    showConfirm(t("confirm-err-title"), t("confirm-err-root"), "OK", null, true);
     return;
   }
 
@@ -702,9 +868,9 @@ function deleteNode(nodeId = activeNodeId) {
   if (!parentNode) return;
 
   showConfirm(
-    "ノードの削除",
-    "このノードとそのすべての子ノードを削除しますか？",
-    "削除する",
+    t("confirm-delete-title"),
+    t("confirm-delete-msg"),
+    t("confirm-delete-btn"),
     () => {
       parentNode.children = parentNode.children.filter(c => c.id !== nodeId);
       saveToLocalStorage();
@@ -1484,9 +1650,9 @@ function setupEventListeners() {
 
   document.getElementById('btn-new').addEventListener('click', () => {
     showConfirm(
-      "新規作成の確認",
-      "現在編集中のマインドマップは破棄されます。<br>本当に新しく作成しますか？",
-      "新規作成",
+      t("confirm-new-title"),
+      t("confirm-new-msg"),
+      t("confirm-new-btn"),
       () => {
         mindMapData = JSON.parse(JSON.stringify(DEFAULT_MINDMAP));
         activeNodeId = 'root';
@@ -1710,8 +1876,11 @@ window.addEventListener('DOMContentLoaded', () => {
   // Handle fallback version display if placeholder isn't replaced by build script
   const versionSpan = document.querySelector('.app-version');
   if (versionSpan && versionSpan.textContent.includes('__APP_VERSION__')) {
-    versionSpan.textContent = 'v0.2.0'; // Fallback value from tauri.conf.json
+    versionSpan.textContent = 'v0.4.0'; // Fallback value from tauri.conf.json
   }
+
+  // Apply UI translations based on system language
+  applyTranslations();
 
   setupEventListeners();
   

@@ -2,78 +2,83 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
-  <title>Mindy - Elegant Mind Mapping</title>
-  <link class="cache-buster" rel="stylesheet" href="style.css?v=20260705-12">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mindy</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Google Material Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Icons+Round" rel="stylesheet">
+  <!-- Google Fonts: Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <!-- Google Material Icons -->
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="app-container">
-    <!-- Header -->
+    <!-- Header Area -->
     <header class="app-header">
-      <div class="header-logo">
-        <span class="material-icons-round logo-icon">psychology</span>
-        <h1>Mindy</h1>
+      <div class="header-left">
+        <span class="material-icons-round logo-icon">blur_on</span>
+        <span class="logo-text">Mindy</span>
       </div>
-      <div class="header-actions">
-        <button id="btn-new" class="icon-btn" title="新規作成">
-          <span class="material-icons-round">create_new_folder</span>
-          <span class="btn-text">新規</span>
+      
+      <div class="header-right">
+        <button id="btn-new" class="app-btn">
+          <span class="material-icons-round">add</span>
+          <span class="btn-text" data-i18n="btn-new">新規</span>
         </button>
-        <button id="btn-import" class="icon-btn" title="データを読み込む (.json)">
+        <button id="btn-import" class="app-btn">
           <span class="material-icons-round">folder_open</span>
-          <span class="btn-text">開く</span>
+          <span class="btn-text" data-i18n="btn-import">開く</span>
+        </button>
+        <button id="btn-export" class="app-btn">
+          <span class="material-icons-round">save</span>
+          <span class="btn-text" data-i18n="btn-export">保存</span>
         </button>
         <input type="file" id="file-input" accept=".json" style="display: none;">
-        
-        <button id="btn-export" class="icon-btn" title="データを保存する (.json)">
-          <span class="material-icons-round">save</span>
-          <span class="btn-text">保存</span>
-        </button>
         
         <div class="divider"></div>
         
         <div class="dropdown">
-          <button id="btn-export-image" class="icon-btn dropdown-toggle" title="画像として出力">
+          <button id="btn-export-image" class="app-btn primary">
             <span class="material-icons-round">image</span>
-            <span class="btn-text">画像出力</span>
+            <span class="btn-text" data-i18n="btn-export-image">画像出力</span>
+            <span class="material-icons-round dropdown-arrow">keyboard_arrow_down</span>
           </button>
           <div class="dropdown-menu">
-            <button id="btn-export-png"><span class="material-icons-round">photo</span>PNG 画像</button>
-            <button id="btn-export-svg"><span class="material-icons-round">code</span>SVG ベクター</button>
+            <button id="btn-export-png" class="dropdown-item">
+              <span class="material-icons-round">photo</span>
+              <span data-i18n="btn-export-png">PNG画像</span>
+            </button>
+            <button id="btn-export-svg" class="dropdown-item">
+              <span class="material-icons-round">brush</span>
+              <span data-i18n="btn-export-svg">SVG画像</span>
+            </button>
           </div>
         </div>
-
+        
         <div class="divider"></div>
-
-        <button id="btn-fit" class="icon-btn" title="全体を表示（画面に合わせる）">
-          <span class="material-icons-round">fit_screen</span>
-        </button>
-        <button id="btn-center" class="icon-btn" title="中央に戻す">
-          <span class="material-icons-round">filter_center_focus</span>
-        </button>
-
-        <button id="btn-help" class="icon-btn" title="ヘルプ">
+        
+        <button id="btn-fit" class="app-btn icon-only" data-i18n-title="btn-fit" title="全体表示"><span class="material-icons-round">fit_screen</span></button>
+        <button id="btn-center" class="app-btn icon-only" data-i18n-title="btn-center" title="中央寄せ"><span class="material-icons-round">filter_center_focus</span></button>
+        
+        <div class="divider"></div>
+        
+        <button id="btn-help" class="app-btn">
           <span class="material-icons-round">help_outline</span>
+          <span class="btn-text" data-i18n="btn-help">ヘルプ</span>
         </button>
       </div>
     </header>
 
-    <!-- Main Workspace -->
+    <!-- Workspace Main -->
     <main class="app-workspace">
-      <!-- SVG Canvas for Mindmap -->
-      <div class="canvas-container" id="canvas-container">
+      <div id="canvas-container">
+        <!-- SVG Canvas -->
         <svg id="mindmap-svg" width="100%" height="100%">
-          <!-- Definitions for patterns, gradients, filters -->
           <defs>
-            <!-- Grid Background -->
+            <!-- Background Grid Pattern -->
             <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
-              <circle cx="2" cy="2" r="1" fill="rgba(255, 255, 255, 0.07)" />
+              <circle cx="2" cy="2" r="1.5" fill="rgba(255, 255, 255, 0.07)" />
             </pattern>
             <!-- Shadow Filter for Nodes -->
             <filter id="node-shadow" x="-20%" y="-20%" width="140%" height="140%">
@@ -107,57 +112,57 @@
 
       <!-- Quick Floating Control for Zoom -->
       <div class="zoom-controls">
-        <button id="btn-zoom-in" class="zoom-btn" title="拡大"><span class="material-icons-round">add</span></button>
+        <button id="btn-zoom-in" class="zoom-btn" data-i18n-title="zoom-in" title="拡大"><span class="material-icons-round">add</span></button>
         <div id="zoom-level" class="zoom-level">100%</div>
-        <button id="btn-zoom-out" class="zoom-btn" title="縮小"><span class="material-icons-round">remove</span></button>
+        <button id="btn-zoom-out" class="zoom-btn" data-i18n-title="zoom-out" title="縮小"><span class="material-icons-round">remove</span></button>
       </div>
 
       <!-- Sidebar / Property Editor -->
       <aside class="property-sidebar" id="property-sidebar">
         <div class="sidebar-header">
-          <h3>ノードの編集</h3>
+          <h3 data-i18n="sidebar-title">ノードの編集</h3>
           <button id="btn-close-sidebar" class="close-btn"><span class="material-icons-round">close</span></button>
         </div>
         
         <div class="sidebar-content">
           <div class="setting-group">
-            <label>テキストの編集</label>
-            <textarea id="node-text-input" class="node-text-input" placeholder="選択されていません" disabled rows="3"></textarea>
+            <label data-i18n="label-text">テキストの編集</label>
+            <textarea id="node-text-input" class="node-text-input" data-i18n-placeholder="placeholder-text" placeholder="選択されていません" disabled rows="3"></textarea>
           </div>
 
           <!-- Node Operations -->
           <div class="setting-group">
-            <label>ノード操作</label>
+            <label data-i18n="sidebar-actions">ノード操作</label>
             <div class="btn-grid">
               <button id="btn-add-child" class="action-btn primary">
                 <span class="material-icons-round">add_circle</span>
-                子ノード追加 (Tab)
+                <span data-i18n="btn-sidebar-add-child">子ノード追加 (Tab)</span>
               </button>
               <button id="btn-add-sibling" class="action-btn">
                 <span class="material-icons-round">add</span>
-                同階層追加 (Enter)
+                <span data-i18n="btn-sidebar-add-sibling">同階層追加 (Enter)</span>
               </button>
               <button id="btn-delete-node" class="action-btn danger">
                 <span class="material-icons-round">delete_outline</span>
-                ノード削除 (Del)
+                <span data-i18n="btn-sidebar-delete">ノード削除 (Del)</span>
               </button>
             </div>
           </div>
 
           <!-- Node Style Settings -->
           <div class="setting-group">
-            <label>スタイル</label>
+            <label data-i18n="sidebar-style">スタイル</label>
             <div class="toggle-wrapper">
               <label class="toggle-container">
                 <input type="checkbox" id="chk-borderless">
-                <span class="toggle-label">枠なし (テキストのみ)</span>
+                <span class="toggle-label" data-i18n="label-borderless">枠なし (テキストのみ)</span>
               </label>
             </div>
           </div>
 
           <!-- Color Customization -->
           <div class="setting-group">
-            <label>ブランチの色 (接続線)</label>
+            <label data-i18n="label-branch-color">ブランチの色 (接続線)</label>
             <div class="color-picker-wrapper">
               <div class="preset-colors" id="branch-presets">
                 <button class="preset-color" style="background-color: #89b4fa;" data-color="#89b4fa"></button>
@@ -171,13 +176,13 @@
               </div>
               <div class="custom-color-input">
                 <input type="color" id="branch-color-picker" value="#89b4fa">
-                <span>カスタム</span>
+                <span data-i18n="color-custom">カスタム</span>
               </div>
             </div>
           </div>
 
           <div class="setting-group">
-            <label>テキストの色</label>
+            <label data-i18n="label-text-color">テキストの色</label>
             <div class="color-picker-wrapper">
               <div class="preset-colors" id="text-presets">
                 <button class="preset-color" style="background-color: #ffffff; border: 1px solid #555;" data-color="#ffffff"></button>
@@ -191,13 +196,13 @@
               </div>
               <div class="custom-color-input">
                 <input type="color" id="text-color-picker" value="#ffffff">
-                <span>カスタム</span>
+                <span data-i18n="color-custom">カスタム</span>
               </div>
             </div>
           </div>
 
           <div class="setting-group">
-            <label>背景の色</label>
+            <label data-i18n="label-bg-color">背景の色</label>
             <div class="color-picker-wrapper">
               <div class="preset-colors" id="bg-presets">
                 <button class="preset-color" style="background-color: #1e1e2e;" data-color="#1e1e2e"></button>
@@ -211,7 +216,7 @@
               </div>
               <div class="custom-color-input">
                 <input type="color" id="bg-color-picker" value="#1e1e2e">
-                <span>カスタム</span>
+                <span data-i18n="color-custom">カスタム</span>
               </div>
             </div>
           </div>
@@ -224,51 +229,51 @@
   <div class="modal-overlay" id="help-modal">
     <div class="modal">
       <div class="modal-header">
-        <h2>Mindy の使い方 <span class="app-version">v__APP_VERSION__</span></h2>
+        <h2><span data-i18n="help-title">Mindy の使い方</span> <span class="app-version">v__APP_VERSION__</span></h2>
         <button class="modal-close-btn" id="btn-close-help"><span class="material-icons-round">close</span></button>
       </div>
       <div class="modal-body">
-        <h3>基本操作</h3>
+        <h3 data-i18n="help-basic-ops">基本操作</h3>
         <ul>
-          <li><strong>ズーム:</strong> マウスホイールを回す、または画面右下の「+」「-」ボタンを押します。</li>
-          <li><strong>スクロール:</strong> 背景をドラッグすると画面を移動できます。</li>
-          <li><strong>ノードの選択:</strong> ノードをクリックすると選択できます。</li>
-          <li><strong>ノードの編集:</strong> 選択されたノードをダブルクリックするとテキストを変更できます。</li>
-          <li><strong>メニュー操作:</strong> ノードを右クリックすると、追加・削除が簡単に行えるメニューが表示されます。</li>
+          <li><strong data-i18n="help-zoom">ズーム:</strong> <span data-i18n="help-zoom-desc">マウスホイールを回す、または画面右下の「+」「-」ボタンを押します。</span></li>
+          <li><strong data-i18n="help-scroll">スクロール:</strong> <span data-i18n="help-scroll-desc">背景をドラッグすると画面を移動できます。</span></li>
+          <li><strong data-i18n="help-select">ノードの選択:</strong> <span data-i18n="help-select-desc">ノードをクリックすると選択できます。</span></li>
+          <li><strong data-i18n="help-edit">ノードの編集:</strong> <span data-i18n="help-edit-desc">選択されたノードをダブルクリックするとテキストを変更できます。</span></li>
+          <li><strong data-i18n="help-menu">メニュー操作:</strong> <span data-i18n="help-menu-desc">ノードを右クリックすると、追加・削除が簡単に行えるメニューが表示されます。</span></li>
         </ul>
 
-        <h3>キーボードショートカット</h3>
+        <h3 data-i18n="help-shortcuts">キーボードショートカット</h3>
         <table class="shortcut-table">
           <thead>
             <tr>
-              <th>キー</th>
-              <th>アクション</th>
+              <th data-i18n="help-col-key">キー</th>
+              <th data-i18n="help-col-action">アクション</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td><kbd>Tab</kbd></td>
-              <td>選択したノードに<strong>子ノード</strong>を追加</td>
+              <td data-i18n="help-action-tab">選択したノードに<strong>子ノード</strong>を追加</td>
             </tr>
             <tr>
               <td><kbd>Enter</kbd></td>
-              <td>選択したノードと<strong>同階層のノード</strong>を追加（ルートの場合は子ノード）</td>
+              <td data-i18n="help-action-enter">選択したノードと<strong>同階層のノード</strong>を追加（ルートの場合は子ノード）</td>
             </tr>
             <tr>
               <td><kbd>Delete</kbd> / <kbd>Backspace</kbd></td>
-              <td>選択したノードを<strong>削除</strong>（ルートは削除できません）</td>
+              <td data-i18n="help-action-delete">選択したノードを<strong>削除</strong>（ルートは削除できません）</td>
             </tr>
             <tr>
               <td><kbd>Space</kbd> / <kbd>F2</kbd> / <kbd>ダブルクリック</kbd></td>
-              <td>選択したノードの<strong>編集を開始</strong>（編集完了は <kbd>Enter</kbd> または外をクリック）</td>
+              <td data-i18n="help-action-edit">選択したノードの<strong>編集を開始</strong>（編集完了は <kbd>Enter</kbd> または外をクリック）</td>
             </tr>
             <tr>
               <td><kbd>Esc</kbd></td>
-              <td>編集をキャンセル / 選択を解除</td>
+              <td data-i18n="help-action-esc">編集をキャンセル / 選択を解除</td>
             </tr>
             <tr>
               <td><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd></td>
-              <td>ノード間をキーボードで移動</td>
+              <td data-i18n="help-action-arrows">ノード間をキーボードで移動</td>
             </tr>
           </tbody>
         </table>
@@ -280,16 +285,16 @@
   <div id="context-menu" class="context-menu">
     <button id="ctx-add-child" class="context-menu-item">
       <span class="material-icons-round">add_circle</span>
-      子ノードを追加
+      <span data-i18n="ctx-add-child">子ノードを追加</span>
     </button>
     <button id="ctx-add-sibling" class="context-menu-item">
       <span class="material-icons-round">add</span>
-      同階層を追加
+      <span data-i18n="ctx-add-sibling">同階層を追加</span>
     </button>
     <div class="context-menu-divider"></div>
     <button id="ctx-delete-node" class="context-menu-item danger">
       <span class="material-icons-round">delete_outline</span>
-      ノードを削除
+      <span data-i18n="ctx-delete-node">ノードを削除</span>
     </button>
   </div>
 
@@ -297,14 +302,14 @@
   <div class="modal-overlay" id="confirm-modal">
     <div class="modal">
       <div class="modal-header">
-        <h2 id="confirm-title">確認</h2>
+        <h2 id="confirm-title" data-i18n="confirm-dialog-title">確認</h2>
         <button class="modal-close-btn" id="btn-close-confirm"><span class="material-icons-round">close</span></button>
       </div>
       <div class="modal-body" style="padding: 20px;">
         <p id="confirm-message" style="margin-bottom: 20px; font-size: 14px; line-height: 1.6; color: var(--text-main);"></p>
         <div style="display: flex; justify-content: flex-end; gap: 12px;">
-          <button class="action-btn" id="btn-confirm-cancel">キャンセル</button>
-          <button class="action-btn primary" id="btn-confirm-ok">確定</button>
+          <button class="action-btn" id="btn-confirm-cancel" data-i18n="btn-cancel">キャンセル</button>
+          <button class="action-btn primary" id="btn-confirm-ok" data-i18n="btn-ok">確定</button>
         </div>
       </div>
     </div>
