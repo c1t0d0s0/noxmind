@@ -55,6 +55,11 @@ const TRANSLATIONS = {
     "help-action-edit": "選択したノードの編集を開始（編集完了は Enter または外をクリック）",
     "help-action-esc": "編集をキャンセル / 選択を解除",
     "help-action-arrows": "ノード間をキーボードで移動",
+    "btn-open-license": "ライセンス表示",
+    "license-modal-title": "ライセンス情報",
+    "license-app-title": "NoxMind ライセンス",
+    "license-third-party-title": "サードパーティのソフトウェア",
+    "license-third-party-desc": "NoxMind は以下のオープンソースプロジェクトを利用しています。",
     // Confirmations / Dialogs
     "confirm-dialog-title": "確認",
     "confirm-new-title": "新規作成の確認",
@@ -123,6 +128,11 @@ const TRANSLATIONS = {
     "help-action-edit": "Start editing the selected node (Press Enter or click outside to finish)",
     "help-action-esc": "Cancel editing / Deselect node",
     "help-action-arrows": "Navigate selection between nodes",
+    "btn-open-license": "View License",
+    "license-modal-title": "License Information",
+    "license-app-title": "NoxMind License",
+    "license-third-party-title": "Third-Party Software",
+    "license-third-party-desc": "NoxMind uses the following open source projects.",
     // Confirmations / Dialogs
     "confirm-dialog-title": "Confirmation",
     "confirm-new-title": "Confirm New Canvas",
@@ -1799,6 +1809,78 @@ function setupEventListeners() {
   });
   helpModal.addEventListener('click', (e) => {
     if (e.target === helpModal) helpModal.classList.remove('open');
+  });
+
+  // License Modal
+  const licenseModal = document.getElementById('license-modal');
+  const btnOpenLicense = document.getElementById('btn-open-license');
+  const btnCloseLicense = document.getElementById('btn-close-license');
+  const noxmindLicenseText = document.getElementById('noxmind-license-text');
+
+  // NoxMind MIT License Text
+  const NOXMIND_LICENSE = `MIT License
+
+Copyright (c) 2026 c1t0d0s0
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.`;
+
+  if (noxmindLicenseText) {
+    noxmindLicenseText.textContent = NOXMIND_LICENSE;
+  }
+
+  if (btnOpenLicense) {
+    btnOpenLicense.addEventListener('click', () => {
+      helpModal.classList.remove('open');
+      licenseModal.classList.add('open');
+    });
+  }
+
+  if (btnCloseLicense) {
+    btnCloseLicense.addEventListener('click', () => {
+      licenseModal.classList.remove('open');
+      helpModal.classList.add('open');
+    });
+  }
+
+  if (licenseModal) {
+    licenseModal.addEventListener('click', (e) => {
+      if (e.target === licenseModal) {
+        licenseModal.classList.remove('open');
+        helpModal.classList.add('open');
+      }
+    });
+  }
+
+  // Accordion Logic for License Modal
+  document.querySelectorAll('.accordion-header').forEach(header => {
+    header.addEventListener('click', () => {
+      const item = header.parentElement;
+      const isActive = item.classList.contains('active');
+      
+      // Close all accordion items
+      document.querySelectorAll('.accordion-item').forEach(i => i.classList.remove('active'));
+      
+      // Toggle current
+      if (!isActive) {
+        item.classList.add('active');
+      }
+    });
   });
 
   // Disable Safari's default pinch-to-zoom on the document level
