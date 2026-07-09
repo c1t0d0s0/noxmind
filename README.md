@@ -32,7 +32,7 @@ It supports organizing thoughts and brainstorming ideas with intuitive and light
 
 6. **Local Export / Import & Auto-Save**
    * Export the entire mind map as a `.json` file to your local machine.
-   * Import saved `.json` files to resume editing, or load FreeMind `.mm` XML files directly.
+   * Import saved `.json` files to resume editing, or load FreeMind `.mm` XML and XMind `.xmind` files directly.
    * All progress is auto-saved to browser `localStorage` to prevent data loss.
 
 7. **High-Quality Image Export (PNG / SVG)**

@@ -402,6 +402,173 @@ function moveNodeToNewParent(nodeId, newParentId) {
   selectNode(nodeId);
 }
 
+// Parse XMind JSON (from content.json inside .xmind) format to NoxMind JSON format
+function parseXMindJSON(jsonText) {
+  let data = JSON.parse(jsonText);
+  if (Array.isArray(data)) {
+    data = data[0];
+  }
+  
+  if (!data) {
+    throw new Error("Invalid XMind JSON: Empty data");
+  }
+
+  const rootTopic = data.rootTopic;
+  if (!rootTopic) {
+    throw new Error("XMindのルートトピックが見つかりません。");
+  }
+
+  function convertXMindNode(xmindNode, isRoot = false) {
+    const id = isRoot ? "root" : (xmindNode.id || generateId());
+    const text = xmindNode.title || "";
+    
+    const node = {
+      id: id,
+      text: text,
+      children: []
+    };
+
+    let childrenList = [];
+    if (xmindNode.children) {
+      if (Array.isArray(xmindNode.children.attached)) {
+        childrenList = childrenList.concat(xmindNode.children.attached);
+      }
+      if (Array.isArray(xmindNode.children.detached)) {
+        childrenList = childrenList.concat(xmindNode.children.detached);
+      }
+      if (Array.isArray(xmindNode.children)) {
+        childrenList = childrenList.concat(xmindNode.children);
+      }
+    }
+
+    if (childrenList.length > 0) {
+      node.children = childrenList.map(child => convertXMindNode(child, false));
+    }
+
+    return node;
+  }
+
+  const result = convertXMindNode(rootTopic, true);
+
+  if (result.children && result.children.length > 0) {
+    const niceColors = ['#f38ba8', '#a6e3a1', '#f9e2af', '#89b4fa', '#cba6f7', '#fab387', '#94e2d5', '#f5e0dc'];
+    result.children.forEach((child, index) => {
+      if (!child.branchColor) {
+        child.branchColor = niceColors[index % niceColors.length];
+      }
+      setDescendantsBranchColor(child, child.branchColor);
+    });
+  }
+
+  return result;
+}
+
+// Parse XMind XML (from content.xml inside older .xmind formats) to NoxMind JSON format
+function parseXMindXML(xmlText) {
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+  
+  const parserError = xmlDoc.getElementsByTagName("parsererror");
+  if (parserError.length > 0) {
+    throw new Error("Invalid XML format");
+  }
+
+  const sheet = xmlDoc.getElementsByTagName("sheet")[0];
+  if (!sheet) {
+    throw new Error("No sheet element found in XMind XML");
+  }
+
+  let rootTopicElement = null;
+  for (let i = 0; i < sheet.childNodes.length; i++) {
+    const child = sheet.childNodes[i];
+    if (child.nodeType === 1 && child.nodeName === "topic") {
+      rootTopicElement = child;
+      break;
+    }
+  }
+
+  if (!rootTopicElement) {
+    throw new Error("XMind XMLのルートトピックが見つかりません。");
+  }
+
+  function convertXMindXMLNode(element, isRoot = false) {
+    const id = isRoot ? "root" : (element.getAttribute("id") || generateId());
+    
+    let text = "";
+    const titleElements = element.getElementsByTagName("title");
+    if (titleElements.length > 0) {
+      for (let i = 0; i < titleElements.length; i++) {
+        if (titleElements[i].parentNode === element) {
+          text = titleElements[i].textContent || "";
+          break;
+        }
+      }
+    }
+
+    const node = {
+      id: id,
+      text: text,
+      children: []
+    };
+
+    let childrenElement = null;
+    for (let i = 0; i < element.childNodes.length; i++) {
+      const child = element.childNodes[i];
+      if (child.nodeType === 1 && child.nodeName === "children") {
+        childrenElement = child;
+        break;
+      }
+    }
+
+    if (childrenElement) {
+      const topicsElements = childrenElement.getElementsByTagName("topics");
+      const childTopics = [];
+      for (let i = 0; i < topicsElements.length; i++) {
+        const topics = topicsElements[i];
+        if (topics.parentNode === childrenElement) {
+          const topicNodes = topics.getElementsByTagName("topic");
+          for (let j = 0; j < topicNodes.length; j++) {
+            if (topicNodes[j].parentNode === topics) {
+              childTopics.push(topicNodes[j]);
+            }
+          }
+        }
+      }
+
+      if (childTopics.length > 0) {
+        node.children = childTopics.map(child => convertXMindXMLNode(child, false));
+      }
+    }
+
+    return node;
+  }
+
+  const result = convertXMindXMLNode(rootTopicElement, true);
+
+  if (result.children && result.children.length > 0) {
+    const niceColors = ['#f38ba8', '#a6e3a1', '#f9e2af', '#89b4fa', '#cba6f7', '#fab387', '#94e2d5', '#f5e0dc'];
+    result.children.forEach((child, index) => {
+      if (!child.branchColor) {
+        child.branchColor = niceColors[index % niceColors.length];
+      }
+      setDescendantsBranchColor(child, child.branchColor);
+    });
+  }
+
+  return result;
+}
+
+// Convert Base64 string to ArrayBuffer
+function base64ToArrayBuffer(base64) {
+  const binaryString = atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
 // Parse FreeMind XML (.mm) format to NoxMind JSON format
 function parseFreeMindXML(xmlText) {
   const parser = new DOMParser();
@@ -486,10 +653,12 @@ function updateSaveButtonsState() {
   if (!btnSaveOverwrite) return;
   
   const isMM = currentFilePath && currentFilePath.toLowerCase().endsWith('.mm');
-  if (isMM) {
+  const isXMind = currentFilePath && currentFilePath.toLowerCase().endsWith('.xmind');
+  if (isMM || isXMind) {
     btnSaveOverwrite.disabled = true;
     btnSaveOverwrite.style.opacity = 0.5;
-    btnSaveOverwrite.setAttribute('title', 'FreeMindファイル (.mm) への直接の上書き保存はできません。名前を付けて保存してください。');
+    const formatName = isMM ? 'FreeMind (.mm)' : 'XMind (.xmind)';
+    btnSaveOverwrite.setAttribute('title', `${formatName} ファイルへの直接の上書き保存はできません。名前を付けて保存してください。`);
   } else {
     btnSaveOverwrite.disabled = false;
     btnSaveOverwrite.style.opacity = 1;
@@ -1403,7 +1572,8 @@ function checkIsTauri() {
 
 async function saveNative(asDialog = false) {
   const isMM = currentFilePath && currentFilePath.toLowerCase().endsWith('.mm');
-  if (isMM) {
+  const isXMind = currentFilePath && currentFilePath.toLowerCase().endsWith('.xmind');
+  if (isMM || isXMind) {
     asDialog = true;
   }
 
@@ -1443,6 +1613,27 @@ async function openNative() {
           showToast(t('toast-import-failed'));
           return;
         }
+      } else if (fileLower.endsWith('.xmind')) {
+        try {
+          const arrayBuffer = base64ToArrayBuffer(result.content);
+          const zip = await JSZip.loadAsync(arrayBuffer);
+          const jsonFile = zip.file("content.json");
+          const xmlFile = zip.file("content.xml");
+          
+          if (jsonFile) {
+            const jsonText = await jsonFile.async("text");
+            parsedData = parseXMindJSON(jsonText);
+          } else if (xmlFile) {
+            const xmlText = await xmlFile.async("text");
+            parsedData = parseXMindXML(xmlText);
+          } else {
+            throw new Error("content.json または content.xml が見つかりません。");
+          }
+        } catch (e) {
+          console.error("XMind parse error:", e);
+          showToast(t('toast-import-failed') + ': ' + e.message);
+          return;
+        }
       } else {
         try {
           parsedData = JSON.parse(result.content);
@@ -1462,7 +1653,6 @@ async function openNative() {
         updateSaveButtonsState();
         renderMindMap();
         fitToScreen();
-        // showToast(t('toast-saved'));
       } else {
         showToast(t('toast-import-failed'));
       }
@@ -1534,19 +1724,41 @@ function exportJSON() {
   }, 250);
 }
 
-// Import JSON/XML data file
+// Import JSON/XML/Zip data file
 function importJSON(e) {
   const file = e.target.files[0];
   if (!file) return;
 
+  const fileLower = file.name.toLowerCase();
+  const isXMind = fileLower.endsWith('.xmind');
+
   const reader = new FileReader();
-  reader.onload = function(evt) {
+  reader.onload = async function(evt) {
     try {
-      const fileLower = file.name.toLowerCase();
       let parsedData = null;
       
       if (fileLower.endsWith('.mm')) {
         parsedData = parseFreeMindXML(evt.target.result);
+      } else if (isXMind) {
+        try {
+          const zip = await JSZip.loadAsync(evt.target.result);
+          const jsonFile = zip.file("content.json");
+          const xmlFile = zip.file("content.xml");
+          
+          if (jsonFile) {
+            const jsonText = await jsonFile.async("text");
+            parsedData = parseXMindJSON(jsonText);
+          } else if (xmlFile) {
+            const xmlText = await xmlFile.async("text");
+            parsedData = parseXMindXML(xmlText);
+          } else {
+            throw new Error("content.json または content.xml が見つかりません。");
+          }
+        } catch (e) {
+          console.error("XMind parse error:", e);
+          alert("XMindファイルのパースに失敗しました:\n" + e.message);
+          return;
+        }
       } else {
         parsedData = JSON.parse(evt.target.result);
       }
@@ -1563,14 +1775,19 @@ function importJSON(e) {
         renderMindMap();
         fitToScreen();
       } else {
-        alert("無効なファイル形式です。マインドマップのJSONファイルまたはFreeMindの.mmファイルを選択してください。");
+        alert("無効なファイル形式です。マインドマップのJSONファイル、FreeMindの.mmファイル、またはXMindの.xmindファイルを選択してください。");
       }
     } catch(err) {
       console.error(err);
       alert("ファイルの読み込み中にエラーが発生しました。");
     }
   };
-  reader.readAsText(file);
+
+  if (isXMind) {
+    reader.readAsArrayBuffer(file);
+  } else {
+    reader.readAsText(file);
+  }
   fileInput.value = ''; // Reset file input
 }
 
@@ -3026,7 +3243,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Handle fallback version display if placeholder isn't replaced by build script
   const versionSpan = document.querySelector('.app-version');
   if (versionSpan && versionSpan.textContent.includes('__APP_VERSION__')) {
-    versionSpan.textContent = 'v0.12.0'; // Fallback value from tauri.conf.json
+    versionSpan.textContent = 'v0.12.1'; // Fallback value from tauri.conf.json
   }
 
   // Apply UI translations based on system language
