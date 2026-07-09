@@ -1421,9 +1421,21 @@ function getStyledSVGPicture() {
     wrapper.parentNode.replaceChild(g, wrapper);
   });
 
-  // Embed simple styles for lines
+  // Embed simple styles for lines and resolve CSS variables
   const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
   style.textContent = `
+    :root {
+      --bg-base: #0b0b0e;
+      --bg-surface: #15151c;
+      --bg-element: #21212e;
+      --border-color: #2d2d3d;
+      --text-main: #f4f4f7;
+      --text-muted: #9e9eb0;
+      --accent: #89b4fa;
+      --success: #a6e3a1;
+      --warning: #f9e2af;
+      --danger: #f38ba8;
+    }
     svg { background-color: #0b0b0e; }
     .connection-path { fill: none; stroke-linecap: round; }
   `;
@@ -2442,7 +2454,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Handle fallback version display if placeholder isn't replaced by build script
   const versionSpan = document.querySelector('.app-version');
   if (versionSpan && versionSpan.textContent.includes('__APP_VERSION__')) {
-    versionSpan.textContent = 'v0.9.0'; // Fallback value from tauri.conf.json
+    versionSpan.textContent = 'v0.9.1'; // Fallback value from tauri.conf.json
   }
 
   // Apply UI translations based on system language
