@@ -4,12 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
   <title>NoxMind - Elegant Mind Mapping</title>
-  <link class="cache-buster" rel="stylesheet" href="style.css?v=0.12.0">
+  <link class="cache-buster" rel="stylesheet" href="style.css?v=0.12.1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
   <!-- Google Material Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script>
     window.onerror = function(message, source, lineno, colno, error) {
       const errorDiv = document.createElement('div');
@@ -79,7 +80,7 @@
           <span class="material-icons-round">folder_open</span>
           <span class="btn-text" data-i18n="btn-import">開く</span>
         </button>
-        <input type="file" id="file-input" accept=".json,.mm" style="display: none;">
+        <input type="file" id="file-input" accept=".json,.mm,.xmind" style="display: none;">
         
         <div class="dropdown">
           <button id="btn-save-dropdown" class="icon-btn dropdown-toggle" data-i18n-title="btn-save-dropdown-title" title="保存メニューを開く">
@@ -526,6 +527,38 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may not use 
                 </div>
               </div>
             </div>
+
+            <div class="accordion-item">
+              <button class="accordion-header">
+                <span>JSZip (MIT)</span>
+                <span class="material-icons-round accordion-icon">expand_more</span>
+              </button>
+              <div class="accordion-content">
+                <div class="license-box">
+                  <pre>MIT License
+
+Copyright (c) 2009-2022 Stuart Knightley, David Duponchel, Franz Buchinger, António Afonso
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</pre>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -606,6 +639,6 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may not use 
     </div>
   </div>
 
-  <script class="cache-buster" src="script.js?v=0.12.0"></script>
+  <script class="cache-buster" src="script.js?v=0.12.1"></script>
 </body>
 </html>

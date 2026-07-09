@@ -32,22 +32,64 @@ fn save_file(path: String, data: String) -> Result<(), String> {
 #[tauri::command]
 async fn open_file_dialog() -> Result<Option<OpenResult>, String> {
     let file_path = rfd::AsyncFileDialog::new()
-        .add_filter("Mindmap Files (*.json, *.mm)", &["json", "mm"])
+        .add_filter("Mindmap Files (*.json, *.mm, *.xmind)", &["json", "mm", "xmind"])
         .add_filter("JSON Mindmap (*.json)", &["json"])
         .add_filter("FreeMind Mindmap (*.mm)", &["mm"])
+        .add_filter("XMind Mindmap (*.xmind)", &["xmind"])
         .pick_file()
         .await;
 
     if let Some(file_handle) = file_path {
         let path = file_handle.path();
-        let content = fs::read_to_string(path).map_err(|e| e.to_string())?;
+        let path_str = path.to_string_lossy().to_string();
+        let content = if path_str.to_lowercase().ends_with(".xmind") {
+            let bytes = fs::read(path).map_err(|e| e.to_string())?;
+            base64_encode(&bytes)
+        } else {
+            fs::read_to_string(path).map_err(|e| e.to_string())?
+        };
         Ok(Some(OpenResult {
-            path: path.to_string_lossy().to_string(),
+            path: path_str,
             content,
         }))
     } else {
         Ok(None)
     }
+}
+
+fn base64_encode(bytes: &[u8]) -> String {
+    const CHARSET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut result = String::with_capacity((bytes.len() + 2) / 3 * 4);
+    for chunk in bytes.chunks(3) {
+        match chunk.len() {
+            3 => {
+                let b0 = chunk[0] as usize;
+                let b1 = chunk[1] as usize;
+                let b2 = chunk[2] as usize;
+                result.push(CHARSET[b0 >> 2] as char);
+                result.push(CHARSET[((b0 & 0x03) << 4) | (b1 >> 4)] as char);
+                result.push(CHARSET[((b1 & 0x0f) << 2) | (b2 >> 6)] as char);
+                result.push(CHARSET[b2 & 0x3f] as char);
+            }
+            2 => {
+                let b0 = chunk[0] as usize;
+                let b1 = chunk[1] as usize;
+                result.push(CHARSET[b0 >> 2] as char);
+                result.push(CHARSET[((b0 & 0x03) << 4) | (b1 >> 4)] as char);
+                result.push(CHARSET[(b1 & 0x0f) << 2] as char);
+                result.push('=');
+            }
+            1 => {
+                let b0 = chunk[0] as usize;
+                result.push(CHARSET[b0 >> 2] as char);
+                result.push(CHARSET[(b0 & 0x03) << 4] as char);
+                result.push('=');
+                result.push('=');
+            }
+            _ => unreachable!(),
+        }
+    }
+    result
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
