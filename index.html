@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
   <title>NoxMind - Elegant Mind Mapping</title>
-  <link class="cache-buster" rel="stylesheet" href="style.css?v=0.10.1">
+  <link class="cache-buster" rel="stylesheet" href="style.css?v=0.11.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -220,6 +220,14 @@
                 <span class="material-icons-round">add</span>
                 <span data-i18n="btn-sidebar-add-sibling">同階層追加 (Enter)</span>
               </button>
+              <button id="btn-move-up" class="action-btn">
+                <span class="material-icons-round">arrow_upward</span>
+                <span data-i18n="btn-sidebar-move-up">上に移動 (Alt+↑)</span>
+              </button>
+              <button id="btn-move-down" class="action-btn">
+                <span class="material-icons-round">arrow_downward</span>
+                <span data-i18n="btn-sidebar-move-down">下に移動 (Alt+↓)</span>
+              </button>
               <button id="btn-delete-node" class="action-btn danger">
                 <span class="material-icons-round">delete_outline</span>
                 <span data-i18n="btn-sidebar-delete">ノード削除 (Del)</span>
@@ -352,6 +360,10 @@
             <tr>
               <td><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd></td>
               <td data-i18n="help-action-arrows">ノード間をキーボードで移動</td>
+            </tr>
+            <tr>
+              <td><kbd>Alt</kbd> + <kbd>↑</kbd> / <kbd>↓</kbd></td>
+              <td data-i18n="help-action-move">選択したノードの順序を上に/下に移動（並び替え）</td>
             </tr>
           </tbody>
         </table>
@@ -531,6 +543,15 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may not use 
       <span data-i18n="ctx-add-sibling">同階層を追加</span>
     </button>
     <div class="context-menu-divider"></div>
+    <button id="ctx-move-up" class="context-menu-item">
+      <span class="material-icons-round">arrow_upward</span>
+      <span data-i18n="ctx-move-up">上に移動</span>
+    </button>
+    <button id="ctx-move-down" class="context-menu-item">
+      <span class="material-icons-round">arrow_downward</span>
+      <span data-i18n="ctx-move-down">下に移動</span>
+    </button>
+    <div class="context-menu-divider-2" style="height: 1px; background-color: var(--border-color); margin: 4px 0;"></div>
     <button id="ctx-delete-node" class="context-menu-item danger">
       <span class="material-icons-round">delete_outline</span>
       <span data-i18n="ctx-delete-node">ノードを削除</span>
@@ -585,6 +606,6 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may not use 
     </div>
   </div>
 
-  <script class="cache-buster" src="script.js?v=0.10.1"></script>
+  <script class="cache-buster" src="script.js?v=0.11.0"></script>
 </body>
 </html>

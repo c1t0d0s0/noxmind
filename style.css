@@ -264,6 +264,7 @@ html, body {
 
 /* HTML Mindmap Node */
 .mindmap-node {
+  position: relative;
   padding: 8px 14px;
   border-radius: 6px;
   background-color: var(--bg-surface);
@@ -1048,13 +1049,47 @@ kbd {
 }
 
 /* Drag and Drop Styles */
-.mindmap-node.drop-target {
+.mindmap-node.drop-target.drop-child {
   border-style: dashed !important;
   border-color: var(--accent) !important;
   border-width: 2px !important;
   background-color: rgba(137, 180, 250, 0.15) !important;
   box-shadow: 0 0 16px rgba(137, 180, 250, 0.4) !important;
   transform: scale(1.05) !important;
+}
+
+.mindmap-node.drop-target.drop-above {
+  transform: scale(1.02) !important;
+}
+
+.mindmap-node.drop-target.drop-above::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  right: -10px;
+  top: -8px;
+  height: 4px;
+  background-color: var(--accent) !important;
+  border-radius: 2px;
+  z-index: 9999;
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.mindmap-node.drop-target.drop-below {
+  transform: scale(1.02) !important;
+}
+
+.mindmap-node.drop-target.drop-below::after {
+  content: '';
+  position: absolute;
+  left: -10px;
+  right: -10px;
+  bottom: -8px;
+  height: 4px;
+  background-color: var(--accent) !important;
+  border-radius: 2px;
+  z-index: 9999;
+  box-shadow: 0 0 8px var(--accent);
 }
 
 .mindmap-node-wrapper.dragging {

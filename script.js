@@ -93,7 +93,12 @@ const TRANSLATIONS = {
     // Context Menu
     "ctx-add-child": "子ノードを追加",
     "ctx-add-sibling": "同階層を追加",
-    "ctx-delete-node": "ノードを削除"
+    "ctx-move-up": "上に移動",
+    "ctx-move-down": "下に移動",
+    "ctx-delete-node": "ノードを削除",
+    "btn-sidebar-move-up": "上に移動 (Alt+↑)",
+    "btn-sidebar-move-down": "下に移動 (Alt+↓)",
+    "help-action-move": "選択したノードの順序を上に/下に移動（並び替え）"
   },
   en: {
     // Header
@@ -183,7 +188,12 @@ const TRANSLATIONS = {
     // Context Menu
     "ctx-add-child": "Add Child Node",
     "ctx-add-sibling": "Add Sibling Node",
-    "ctx-delete-node": "Delete Node"
+    "ctx-move-up": "Move Up",
+    "ctx-move-down": "Move Down",
+    "ctx-delete-node": "Delete Node",
+    "btn-sidebar-move-up": "Move Up (Alt+↑)",
+    "btn-sidebar-move-down": "Move Down (Alt+↓)",
+    "help-action-move": "Move selected node order up/down (reorder)"
   }
 };
 
@@ -271,6 +281,7 @@ let dragNodeOffsetX = 0;
 let dragNodeOffsetY = 0;
 let isDraggingNode = false;
 let dropTargetNodeId = null;
+let dropType = 'child'; // 'child', 'above', 'below'
 let contextMenuNodeId = null;
 
 // Zoom and Pan state
@@ -391,6 +402,62 @@ function moveNodeToNewParent(nodeId, newParentId) {
   selectNode(nodeId);
 }
 
+// Move node order within sibling nodes
+function moveNodeOrder(nodeId, direction) {
+  if (nodeId === 'root') return;
+  const parent = findParentNode(mindMapData, nodeId);
+  if (!parent || !parent.children) return;
+
+  const index = parent.children.findIndex(c => c.id === nodeId);
+  if (index === -1) return;
+
+  const newIndex = index + direction;
+  // Out of bounds check
+  if (newIndex < 0 || newIndex >= parent.children.length) return;
+
+  // Swap elements
+  const [removed] = parent.children.splice(index, 1);
+  parent.children.splice(newIndex, 0, removed);
+
+  saveToLocalStorage();
+  renderMindMap();
+  selectNode(nodeId);
+}
+
+// Insert node as sibling of target node
+function insertNodeAsSibling(dragNodeId, targetNodeId, position) {
+  const dragNode = findNodeById(mindMapData, dragNodeId);
+  const oldParent = findParentNode(mindMapData, dragNodeId);
+  const targetParent = findParentNode(mindMapData, targetNodeId);
+  
+  if (!dragNode || !oldParent || !targetParent) return;
+  
+  // Remove from old parent
+  oldParent.children = oldParent.children.filter(c => c.id !== dragNodeId);
+  
+  // Find index in target parent
+  const targetIndex = targetParent.children.findIndex(c => c.id === targetNodeId);
+  if (targetIndex === -1) return;
+  
+  // Decide new index
+  const newIndex = position === 'above' ? targetIndex : targetIndex + 1;
+  
+  // Inherit branch color
+  if (targetParent.id === 'root') {
+    const niceColors = ['#f38ba8', '#a6e3a1', '#f9e2af', '#89b4fa', '#cba6f7', '#fab387', '#94e2d5', '#f5e0dc'];
+    dragNode.branchColor = niceColors[targetParent.children.length % niceColors.length];
+  } else {
+    dragNode.branchColor = targetParent.branchColor;
+  }
+  
+  // Insert at new index
+  targetParent.children.splice(newIndex, 0, dragNode);
+  
+  saveToLocalStorage();
+  renderMindMap();
+  selectNode(dragNodeId);
+}
+
 // Show custom context menu for a node
 function showContextMenu(x, y, nodeId) {
   // Hide canvas menu first
@@ -400,16 +467,39 @@ function showContextMenu(x, y, nodeId) {
   const menu = document.getElementById('context-menu');
   const ctxAddSibling = document.getElementById('ctx-add-sibling');
   const ctxDeleteNode = document.getElementById('ctx-delete-node');
+  const ctxMoveUp = document.getElementById('ctx-move-up');
+  const ctxMoveDown = document.getElementById('ctx-move-down');
   const divider = menu.querySelector('.context-menu-divider');
+  const divider2 = menu.querySelector('.context-menu-divider-2');
   
   if (nodeId === 'root') {
     if (ctxAddSibling) ctxAddSibling.style.display = 'none';
     if (ctxDeleteNode) ctxDeleteNode.style.display = 'none';
+    if (ctxMoveUp) ctxMoveUp.style.display = 'none';
+    if (ctxMoveDown) ctxMoveDown.style.display = 'none';
     if (divider) divider.style.display = 'none';
+    if (divider2) divider2.style.display = 'none';
   } else {
     if (ctxAddSibling) ctxAddSibling.style.display = 'flex';
     if (ctxDeleteNode) ctxDeleteNode.style.display = 'flex';
+    if (ctxMoveUp) ctxMoveUp.style.display = 'flex';
+    if (ctxMoveDown) ctxMoveDown.style.display = 'flex';
     if (divider) divider.style.display = 'block';
+    if (divider2) divider2.style.display = 'block';
+    
+    // Enable/disable based on sibling position
+    const parent = findParentNode(mindMapData, nodeId);
+    if (parent && parent.children) {
+      const idx = parent.children.findIndex(c => c.id === nodeId);
+      if (ctxMoveUp) {
+        ctxMoveUp.disabled = idx === 0;
+        ctxMoveUp.style.opacity = idx === 0 ? 0.5 : 1;
+      }
+      if (ctxMoveDown) {
+        ctxMoveDown.disabled = idx === parent.children.length - 1;
+        ctxMoveDown.style.opacity = idx === parent.children.length - 1 ? 0.5 : 1;
+      }
+    }
   }
   
   menu.style.display = 'block';
@@ -1654,6 +1744,47 @@ function updateSidebar() {
     btnDelete.disabled = false;
     btnDelete.style.opacity = 1;
   }
+
+  // Sidebar Move Buttons State Control
+  const btnMoveUp = document.getElementById('btn-move-up');
+  const btnMoveDown = document.getElementById('btn-move-down');
+  
+  if (selectedNodeIds.size > 1 || !node || node.id === 'root') {
+    if (btnMoveUp) {
+      btnMoveUp.disabled = true;
+      btnMoveUp.style.opacity = 0.5;
+    }
+    if (btnMoveDown) {
+      btnMoveDown.disabled = true;
+      btnMoveDown.style.opacity = 0.5;
+    }
+  } else {
+    const parent = findParentNode(mindMapData, node.id);
+    if (parent && parent.children) {
+      const idx = parent.children.findIndex(c => c.id === node.id);
+      
+      if (btnMoveUp) {
+        const cannotMoveUp = idx === 0;
+        btnMoveUp.disabled = cannotMoveUp;
+        btnMoveUp.style.opacity = cannotMoveUp ? 0.5 : 1;
+      }
+      
+      if (btnMoveDown) {
+        const cannotMoveDown = idx === parent.children.length - 1;
+        btnMoveDown.disabled = cannotMoveDown;
+        btnMoveDown.style.opacity = cannotMoveDown ? 0.5 : 1;
+      }
+    } else {
+      if (btnMoveUp) {
+        btnMoveUp.disabled = true;
+        btnMoveUp.style.opacity = 0.5;
+      }
+      if (btnMoveDown) {
+        btnMoveDown.disabled = true;
+        btnMoveDown.style.opacity = 0.5;
+      }
+    }
+  }
 }
 
 function updateActiveNodeStyle(property, value) {
@@ -1865,8 +1996,11 @@ function setupEventListeners() {
         const hoverNodeEl = hoverEl ? hoverEl.closest('.mindmap-node') : null;
         
         // Clear previous target highlights
-        document.querySelectorAll('.mindmap-node').forEach(el => el.classList.remove('drop-target'));
+        document.querySelectorAll('.mindmap-node').forEach(el => {
+          el.classList.remove('drop-target', 'drop-child', 'drop-above', 'drop-below');
+        });
         dropTargetNodeId = null;
+        dropType = 'child';
         
         if (hoverNodeEl) {
           const hoverNodeId = hoverNodeEl.getAttribute('data-id');
@@ -1876,7 +2010,31 @@ function setupEventListeners() {
             
             if (!isDesc) {
               dropTargetNodeId = hoverNodeId;
-              hoverNodeEl.classList.add('drop-target');
+              
+              if (hoverNodeId === 'root') {
+                dropType = 'child';
+                hoverNodeEl.classList.add('drop-target');
+                hoverNodeEl.classList.add('drop-child');
+              } else {
+                const targetNode = findNodeById(mindMapData, hoverNodeId);
+                const topY = targetNode.y - targetNode.height / 2;
+                const bottomY = targetNode.y + targetNode.height / 2;
+                const relativeY = (mouseSvg.y - topY) / targetNode.height;
+                
+                if (relativeY < 0.35) {
+                  dropType = 'above';
+                  hoverNodeEl.classList.add('drop-target');
+                  hoverNodeEl.classList.add('drop-above');
+                } else if (relativeY > 0.65) {
+                  dropType = 'below';
+                  hoverNodeEl.classList.add('drop-target');
+                  hoverNodeEl.classList.add('drop-below');
+                } else {
+                  dropType = 'child';
+                  hoverNodeEl.classList.add('drop-target');
+                  hoverNodeEl.classList.add('drop-child');
+                }
+              }
             }
           }
         }
@@ -1924,11 +2082,17 @@ function setupEventListeners() {
         fo.style.pointerEvents = 'auto';
       }
       
-      document.querySelectorAll('.mindmap-node').forEach(el => el.classList.remove('drop-target'));
+      document.querySelectorAll('.mindmap-node').forEach(el => {
+        el.classList.remove('drop-target', 'drop-child', 'drop-above', 'drop-below');
+      });
       
       if (isDraggingNode) {
         if (dropTargetNodeId) {
-          moveNodeToNewParent(dragNodeId, dropTargetNodeId);
+          if (dropType === 'child') {
+            moveNodeToNewParent(dragNodeId, dropTargetNodeId);
+          } else {
+            insertNodeAsSibling(dragNodeId, dropTargetNodeId, dropType);
+          }
         } else {
           // Snap back
           renderMindMap();
@@ -2107,7 +2271,25 @@ function setupEventListeners() {
         }
         break;
       case 'ArrowUp':
+        e.preventDefault();
+        if (e.altKey) {
+          if (activeNodeId && selectedNodeIds.size === 1) {
+            moveNodeOrder(activeNodeId, -1);
+          }
+        } else {
+          moveSelection(e.key);
+        }
+        break;
       case 'ArrowDown':
+        e.preventDefault();
+        if (e.altKey) {
+          if (activeNodeId && selectedNodeIds.size === 1) {
+            moveNodeOrder(activeNodeId, 1);
+          }
+        } else {
+          moveSelection(e.key);
+        }
+        break;
       case 'ArrowLeft':
       case 'ArrowRight':
         e.preventDefault();
@@ -2297,6 +2479,28 @@ function setupEventListeners() {
     });
   }
 
+  const ctxMoveUp = document.getElementById('ctx-move-up');
+  if (ctxMoveUp) {
+    ctxMoveUp.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (contextMenuNodeId) {
+        moveNodeOrder(contextMenuNodeId, -1);
+      }
+      hideContextMenu();
+    });
+  }
+
+  const ctxMoveDown = document.getElementById('ctx-move-down');
+  if (ctxMoveDown) {
+    ctxMoveDown.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (contextMenuNodeId) {
+        moveNodeOrder(contextMenuNodeId, 1);
+      }
+      hideContextMenu();
+    });
+  }
+
   const ctxDeleteNode = document.getElementById('ctx-delete-node');
   if (ctxDeleteNode) {
     ctxDeleteNode.addEventListener('click', (e) => {
@@ -2421,6 +2625,16 @@ function setupEventListeners() {
 
   const btnAddSibling = document.getElementById('btn-add-sibling');
   if (btnAddSibling) btnAddSibling.addEventListener('click', () => addNewSibling());
+
+  const btnMoveUp = document.getElementById('btn-move-up');
+  if (btnMoveUp) btnMoveUp.addEventListener('click', () => {
+    if (activeNodeId && selectedNodeIds.size === 1) moveNodeOrder(activeNodeId, -1);
+  });
+
+  const btnMoveDown = document.getElementById('btn-move-down');
+  if (btnMoveDown) btnMoveDown.addEventListener('click', () => {
+    if (activeNodeId && selectedNodeIds.size === 1) moveNodeOrder(activeNodeId, 1);
+  });
 
   const btnDeleteNode = document.getElementById('btn-delete-node');
   if (btnDeleteNode) btnDeleteNode.addEventListener('click', () => deleteNode());
@@ -2677,7 +2891,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Handle fallback version display if placeholder isn't replaced by build script
   const versionSpan = document.querySelector('.app-version');
   if (versionSpan && versionSpan.textContent.includes('__APP_VERSION__')) {
-    versionSpan.textContent = 'v0.10.1'; // Fallback value from tauri.conf.json
+    versionSpan.textContent = 'v0.11.0'; // Fallback value from tauri.conf.json
   }
 
   // Apply UI translations based on system language
