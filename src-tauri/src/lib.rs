@@ -32,7 +32,9 @@ fn save_file(path: String, data: String) -> Result<(), String> {
 #[tauri::command]
 async fn open_file_dialog() -> Result<Option<OpenResult>, String> {
     let file_path = rfd::AsyncFileDialog::new()
-        .add_filter("JSON Mindmap", &["json"])
+        .add_filter("Mindmap Files (*.json, *.mm)", &["json", "mm"])
+        .add_filter("JSON Mindmap (*.json)", &["json"])
+        .add_filter("FreeMind Mindmap (*.mm)", &["mm"])
         .pick_file()
         .await;
 

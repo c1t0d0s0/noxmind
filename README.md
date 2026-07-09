@@ -30,9 +30,9 @@ It supports organizing thoughts and brainstorming ideas with intuitive and light
    * Toggle **"Borderless (Text Only)"** style for cleaner layouts.
    * Once enabled, subsequent new child/sibling nodes automatically inherit the borderless style.
 
-6. **Local JSON Export / Import & Auto-Save**
+6. **Local Export / Import & Auto-Save**
    * Export the entire mind map as a `.json` file to your local machine.
-   * Import saved files to resume editing where you left off.
+   * Import saved `.json` files to resume editing, or load FreeMind `.mm` XML files directly.
    * All progress is auto-saved to browser `localStorage` to prevent data loss.
 
 7. **High-Quality Image Export (PNG / SVG)**

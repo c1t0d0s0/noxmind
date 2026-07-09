@@ -402,6 +402,101 @@ function moveNodeToNewParent(nodeId, newParentId) {
   selectNode(nodeId);
 }
 
+// Parse FreeMind XML (.mm) format to NoxMind JSON format
+function parseFreeMindXML(xmlText) {
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+  
+  const parserError = xmlDoc.getElementsByTagName("parsererror");
+  if (parserError.length > 0) {
+    throw new Error("Invalid XML format");
+  }
+
+  const mapElement = xmlDoc.getElementsByTagName("map")[0];
+  if (!mapElement) {
+    throw new Error("No map element found");
+  }
+
+  const rootNodeElement = mapElement.getElementsByTagName("node")[0];
+  if (!rootNodeElement) {
+    throw new Error("No root node found");
+  }
+
+  function convertNode(element, isRoot = false) {
+    const text = element.getAttribute("TEXT") || "";
+    const id = isRoot ? "root" : (element.getAttribute("ID") || generateId());
+    
+    const color = element.getAttribute("COLOR") || undefined;
+    const bgColor = element.getAttribute("BACKGROUND_COLOR") || undefined;
+    const folded = element.getAttribute("FOLDED") === "true";
+
+    const node = {
+      id: id,
+      text: text,
+      children: []
+    };
+
+    if (color) node.color = color;
+    if (bgColor) node.bgColor = bgColor;
+    if (folded) node.collapsed = true;
+
+    const childElements = [];
+    for (let i = 0; i < element.childNodes.length; i++) {
+      const child = element.childNodes[i];
+      if (child.nodeType === 1 && child.nodeName === "node") {
+        childElements.push(child);
+      }
+    }
+
+    if (childElements.length > 0) {
+      node.children = childElements.map(child => convertNode(child, false));
+    }
+
+    return node;
+  }
+
+  const result = convertNode(rootNodeElement, true);
+  
+  // Assign nice colors for root children branches
+  if (result.children && result.children.length > 0) {
+    const niceColors = ['#f38ba8', '#a6e3a1', '#f9e2af', '#89b4fa', '#cba6f7', '#fab387', '#94e2d5', '#f5e0dc'];
+    result.children.forEach((child, index) => {
+      if (!child.branchColor) {
+        child.branchColor = niceColors[index % niceColors.length];
+      }
+      setDescendantsBranchColor(child, child.branchColor);
+    });
+  }
+
+  return result;
+}
+
+function setDescendantsBranchColor(node, color) {
+  if (node.children) {
+    node.children.forEach(child => {
+      child.branchColor = color;
+      setDescendantsBranchColor(child, color);
+    });
+  }
+}
+
+// Update the disabled status of the "Save" (Overwrite) button based on the file type
+function updateSaveButtonsState() {
+  const btnSaveOverwrite = document.getElementById('btn-save-overwrite');
+  if (!btnSaveOverwrite) return;
+  
+  const isMM = currentFilePath && currentFilePath.toLowerCase().endsWith('.mm');
+  if (isMM) {
+    btnSaveOverwrite.disabled = true;
+    btnSaveOverwrite.style.opacity = 0.5;
+    btnSaveOverwrite.setAttribute('title', 'FreeMindファイル (.mm) への直接の上書き保存はできません。名前を付けて保存してください。');
+  } else {
+    btnSaveOverwrite.disabled = false;
+    btnSaveOverwrite.style.opacity = 1;
+    btnSaveOverwrite.removeAttribute('title');
+  }
+}
+
 // Move node order within sibling nodes
 function moveNodeOrder(nodeId, direction) {
   if (nodeId === 'root') return;
@@ -1307,6 +1402,11 @@ function checkIsTauri() {
 }
 
 async function saveNative(asDialog = false) {
+  const isMM = currentFilePath && currentFilePath.toLowerCase().endsWith('.mm');
+  if (isMM) {
+    asDialog = true;
+  }
+
   const dataStr = JSON.stringify(mindMapData, null, 2);
   
   try {
@@ -1319,6 +1419,7 @@ async function saveNative(asDialog = false) {
         currentFilePath = path;
         updateFileNameDisplay();
         showToast(t('toast-saved'));
+        updateSaveButtonsState();
       }
     }
   } catch (err) {
@@ -1331,7 +1432,26 @@ async function openNative() {
   try {
     const result = await window.__TAURI__.core.invoke('open_file_dialog');
     if (result) {
-      const parsedData = JSON.parse(result.content);
+      const fileLower = result.path ? result.path.toLowerCase() : "";
+      let parsedData = null;
+      
+      if (fileLower.endsWith('.mm')) {
+        try {
+          parsedData = parseFreeMindXML(result.content);
+        } catch (e) {
+          console.error("FreeMind XML parse error:", e);
+          showToast(t('toast-import-failed'));
+          return;
+        }
+      } else {
+        try {
+          parsedData = JSON.parse(result.content);
+        } catch (e) {
+          showToast(t('toast-import-failed'));
+          return;
+        }
+      }
+
       if (parsedData && parsedData.id === 'root' && typeof parsedData.text === 'string') {
         mindMapData = parsedData;
         currentFilePath = result.path;
@@ -1339,9 +1459,10 @@ async function openNative() {
         activeNodeId = 'root';
         saveToLocalStorage();
         updateFileNameDisplay();
+        updateSaveButtonsState();
         renderMindMap();
         fitToScreen();
-        showToast(t('toast-saved'));
+        // showToast(t('toast-saved'));
       } else {
         showToast(t('toast-import-failed'));
       }
@@ -1413,7 +1534,7 @@ function exportJSON() {
   }, 250);
 }
 
-// Import JSON data file
+// Import JSON/XML data file
 function importJSON(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -1421,20 +1542,31 @@ function importJSON(e) {
   const reader = new FileReader();
   reader.onload = function(evt) {
     try {
-      const parsedData = JSON.parse(evt.target.result);
+      const fileLower = file.name.toLowerCase();
+      let parsedData = null;
+      
+      if (fileLower.endsWith('.mm')) {
+        parsedData = parseFreeMindXML(evt.target.result);
+      } else {
+        parsedData = JSON.parse(evt.target.result);
+      }
       
       // Basic validation of import structure
       if (parsedData && parsedData.id === 'root' && typeof parsedData.text === 'string') {
         mindMapData = parsedData;
+        currentFilePath = file.name;
         selectedNodeIds = new Set(['root']);
         activeNodeId = 'root';
         saveToLocalStorage();
+        updateFileNameDisplay();
+        updateSaveButtonsState();
         renderMindMap();
         fitToScreen();
       } else {
-        alert("無効なファイル形式です。マインドマップのJSONファイルを選択してください。");
+        alert("無効なファイル形式です。マインドマップのJSONファイルまたはFreeMindの.mmファイルを選択してください。");
       }
     } catch(err) {
+      console.error(err);
       alert("ファイルの読み込み中にエラーが発生しました。");
     }
   };
@@ -2309,9 +2441,12 @@ function setupEventListeners() {
         t("confirm-new-btn"),
         () => {
           mindMapData = JSON.parse(JSON.stringify(DEFAULT_MINDMAP));
+          currentFilePath = null;
           selectedNodeIds = new Set(['root']);
           activeNodeId = 'root';
           saveToLocalStorage();
+          updateFileNameDisplay();
+          updateSaveButtonsState();
           renderMindMap();
           centerMindMap();
         }
@@ -2891,7 +3026,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Handle fallback version display if placeholder isn't replaced by build script
   const versionSpan = document.querySelector('.app-version');
   if (versionSpan && versionSpan.textContent.includes('__APP_VERSION__')) {
-    versionSpan.textContent = 'v0.11.0'; // Fallback value from tauri.conf.json
+    versionSpan.textContent = 'v0.12.0'; // Fallback value from tauri.conf.json
   }
 
   // Apply UI translations based on system language
@@ -2901,6 +3036,7 @@ window.addEventListener('DOMContentLoaded', () => {
   
   // Render nodes initially
   renderMindMap();
+  updateSaveButtonsState();
   
   // Start observing canvas container size changes (HTML div is reliable on WebKit)
   resizeObserver.observe(canvasContainer);
