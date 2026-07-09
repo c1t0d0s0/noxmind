@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
   <title>NoxMind - Elegant Mind Mapping</title>
-  <link class="cache-buster" rel="stylesheet" href="style.css?v=0.8.6">
+  <link class="cache-buster" rel="stylesheet" href="style.css?v=0.9.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -121,7 +121,7 @@
         </button>
 
         <button id="btn-layout-mode" class="icon-btn" data-i18n-title="btn-layout-mode-title" title="配置切り替え (左右均等 / 右側のみ)">
-          <span class="material-icons-round">align_horizontal_left</span>
+          <span class="material-icons-round">align_horizontal_center</span>
           <span class="btn-text" data-i18n="btn-layout-mode">配置方向</span>
         </button>
  
@@ -170,6 +170,22 @@
             <g id="nodes-group"></g>
           </g>
         </svg>
+      </div>
+
+      <!-- Search Floating Panel -->
+      <div id="search-panel" class="search-panel">
+        <span class="material-icons-round search-icon">search</span>
+        <input type="text" id="search-input" placeholder="ノードを検索..." data-i18n-placeholder="search-placeholder">
+        <span id="search-results-count" class="search-results-count">0 / 0</span>
+        <button id="btn-search-prev" class="search-nav-btn" title="前へ">
+          <span class="material-icons-round">expand_less</span>
+        </button>
+        <button id="btn-search-next" class="search-nav-btn" title="次へ">
+          <span class="material-icons-round">expand_more</span>
+        </button>
+        <button id="btn-search-close" class="search-close-btn" title="閉じる">
+          <span class="material-icons-round">close</span>
+        </button>
       </div>
 
       <!-- Quick Floating Control for Zoom -->
@@ -569,6 +585,6 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may not use 
     </div>
   </div>
 
-  <script class="cache-buster" src="script.js?v=0.8.6"></script>
+  <script class="cache-buster" src="script.js?v=0.9.0"></script>
 </body>
 </html>

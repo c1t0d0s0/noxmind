@@ -88,6 +88,7 @@ const TRANSLATIONS = {
     "central-theme": "セントラルテーマ",
     "confirm-err-title": "削除できません",
     "confirm-err-root": "セントラルテーマ（ルート）は削除できません。",
+    "search-placeholder": "ノードを検索...",
     // Context Menu
     "ctx-add-child": "子ノードを追加",
     "ctx-add-sibling": "同階層を追加",
@@ -176,6 +177,7 @@ const TRANSLATIONS = {
     "confirm-dialog-title": "Confirmation",
     "confirm-err-title": "Cannot Delete",
     "confirm-err-root": "The Central Theme (root) cannot be deleted.",
+    "search-placeholder": "Search nodes...",
     // Context Menu
     "ctx-add-child": "Add Child Node",
     "ctx-add-sibling": "Add Sibling Node",
@@ -247,6 +249,11 @@ let currentFilePath = null;
 let activeNodeId = 'root';
 let isEditing = false;
 let defaultBorderless = false;
+
+// Search state
+let isSearchOpen = false;
+let searchMatches = [];
+let currentSearchIndex = -1;
 
 // Drag and Drop state
 let dragNodeId = null;
@@ -699,6 +706,13 @@ function renderNode(node, depth) {
   if (node.id === activeNodeId) div.className += ' active';
   if (node.borderless) div.className += ' borderless';
   
+  if (searchMatches.includes(node.id)) {
+    div.className += ' search-match';
+    if (searchMatches[currentSearchIndex] === node.id) {
+      div.className += ' search-current-match';
+    }
+  }
+  
   // Custom Styles
   div.style.backgroundColor = node.bgColor || '#1e1e2e';
   div.style.color = node.color || '#ffffff';
@@ -1070,7 +1084,7 @@ function fitToScreen() {
     if (nMinY < minY) minY = nMinY;
     if (nMaxY > maxY) maxY = nMaxY;
     
-    if (node.children) {
+    if (node.children && !node.collapsed) {
       node.children.forEach(getBounds);
     }
   }
@@ -1293,7 +1307,7 @@ function getStyledSVGPicture() {
     if (nMinY < minY) minY = nMinY;
     if (nMaxY > maxY) maxY = nMaxY;
     
-    if (node.children) {
+    if (node.children && !node.collapsed) {
       node.children.forEach(getBounds);
     }
   }
@@ -1379,7 +1393,7 @@ function getStyledSVGPicture() {
     svgText.setAttribute('font-size', fontSize);
     svgText.setAttribute('font-family', 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif');
     svgText.setAttribute('font-weight', fontWeight);
-    svgText.setAttribute('text-anchor', 'middle');
+    svgText.setAttribute('text-anchor', 'start');
     
     // Split and lay out lines (manual breaks only)
     const lines = text.split('\n');
@@ -1389,9 +1403,13 @@ function getStyledSVGPicture() {
     // Compute Y start alignment
     const startY = y + (h / 2) - (totalTextHeight / 2) + (parseInt(fontSize) * 0.85);
 
+    // Compute left padding based on node level
+    const isRoot = htmlNode.classList.contains('level-0');
+    const paddingLeft = isRoot ? 21 : 16;
+
     lines.forEach((line, index) => {
       const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
-      tspan.setAttribute('x', x + w / 2);
+      tspan.setAttribute('x', x + paddingLeft);
       tspan.setAttribute('y', startY + index * lineHeight);
       tspan.textContent = line;
       svgText.appendChild(tspan);
@@ -1814,6 +1832,13 @@ function setupEventListeners() {
 
   // Global Keyboard Shortcuts
   window.addEventListener('keydown', (e) => {
+    // Ctrl+F or Cmd+F
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'f' || e.key === 'F')) {
+      e.preventDefault();
+      showSearchPanel();
+      return;
+    }
+    
     // Ignore global shortcuts if the user is typing in a text field, textarea, or contentEditable element
     if (isEditing || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
     
@@ -2318,6 +2343,37 @@ SOFTWARE.`;
       e.preventDefault();
     }
   }, { passive: false });
+
+  // Search event listeners
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) {
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          goToMatch(-1);
+        } else {
+          goToMatch(1);
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        hideSearchPanel();
+      }
+    });
+    
+    searchInput.addEventListener('input', (e) => {
+      performSearch(e.target.value);
+    });
+  }
+  
+  const btnSearchPrev = document.getElementById('btn-search-prev');
+  if (btnSearchPrev) btnSearchPrev.addEventListener('click', () => goToMatch(-1));
+  
+  const btnSearchNext = document.getElementById('btn-search-next');
+  if (btnSearchNext) btnSearchNext.addEventListener('click', () => goToMatch(1));
+  
+  const btnSearchClose = document.getElementById('btn-search-close');
+  if (btnSearchClose) btnSearchClose.addEventListener('click', hideSearchPanel);
 }
 
 function setupPresetColors(containerId, property) {
@@ -2386,7 +2442,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Handle fallback version display if placeholder isn't replaced by build script
   const versionSpan = document.querySelector('.app-version');
   if (versionSpan && versionSpan.textContent.includes('__APP_VERSION__')) {
-    versionSpan.textContent = 'v0.5.0'; // Fallback value from tauri.conf.json
+    versionSpan.textContent = 'v0.9.0'; // Fallback value from tauri.conf.json
   }
 
   // Apply UI translations based on system language
@@ -2454,11 +2510,131 @@ function updateLayoutModeUI() {
   if (layoutMode === 'right-only') {
     btnLayoutMode.classList.add('active');
     const icon = btnLayoutMode.querySelector('.material-icons-round');
-    if (icon) icon.textContent = 'align_horizontal_right';
+    if (icon) icon.textContent = 'align_horizontal_left';
   } else {
     btnLayoutMode.classList.remove('active');
     const icon = btnLayoutMode.querySelector('.material-icons-round');
-    if (icon) icon.textContent = 'align_horizontal_left';
+    if (icon) icon.textContent = 'align_horizontal_center';
+  }
+}
+
+// --- Search Functionality Helper Functions ---
+function findMatchingNodes(node, query, matches = []) {
+  if (!node) return matches;
+  if (node.text && node.text.toLowerCase().includes(query.toLowerCase())) {
+    matches.push(node.id);
+  }
+  if (node.children) {
+    node.children.forEach(child => findMatchingNodes(child, query, matches));
+  }
+  return matches;
+}
+
+function expandAncestors(nodeId) {
+  let parent = findParentNode(mindMapData, nodeId);
+  let changed = false;
+  while (parent) {
+    if (parent.collapsed) {
+      parent.collapsed = false;
+      changed = true;
+    }
+    parent = findParentNode(mindMapData, parent.id);
+  }
+  return changed;
+}
+
+function centerOnNode(nodeId) {
+  const node = findNodeById(mindMapData, nodeId);
+  if (!node) return;
+  
+  const rect = svg.getBoundingClientRect();
+  const rectW = rect.width || window.innerWidth;
+  const rectH = rect.height || (window.innerHeight - 64);
+  
+  translateX = rectW / 2 - node.x * scale;
+  translateY = rectH / 2 - node.y * scale;
+  
+  if (isNaN(translateX) || isNaN(translateY)) {
+    translateX = rectW / 2;
+    translateY = rectH / 2;
+  }
+  
+  updateViewportTransform();
+}
+
+function showSearchPanel() {
+  const panel = document.getElementById('search-panel');
+  const input = document.getElementById('search-input');
+  if (panel && input) {
+    panel.classList.add('open');
+    input.focus();
+    input.select();
+    isSearchOpen = true;
+    performSearch(input.value);
+  }
+}
+
+function hideSearchPanel() {
+  const panel = document.getElementById('search-panel');
+  if (panel) {
+    panel.classList.remove('open');
+  }
+  isSearchOpen = false;
+  searchMatches = [];
+  currentSearchIndex = -1;
+  renderMindMap();
+}
+
+function performSearch(query) {
+  searchMatches = [];
+  currentSearchIndex = -1;
+  
+  if (query.trim() !== '') {
+    searchMatches = findMatchingNodes(mindMapData, query);
+  }
+  
+  updateSearchCounter();
+  
+  if (searchMatches.length > 0) {
+    currentSearchIndex = 0;
+    const targetId = searchMatches[currentSearchIndex];
+    const changed = expandAncestors(targetId);
+    if (changed) {
+      saveToLocalStorage();
+    }
+    // Make sure nodes are rendered with the correct search classes before selecting/focusing
+    renderMindMap();
+    selectNode(targetId);
+    centerOnNode(targetId);
+  } else {
+    renderMindMap();
+  }
+}
+
+function goToMatch(direction) {
+  if (searchMatches.length === 0) return;
+  
+  currentSearchIndex = (currentSearchIndex + direction + searchMatches.length) % searchMatches.length;
+  updateSearchCounter();
+  
+  const targetId = searchMatches[currentSearchIndex];
+  const changed = expandAncestors(targetId);
+  if (changed) {
+    saveToLocalStorage();
+  }
+  renderMindMap();
+  selectNode(targetId);
+  centerOnNode(targetId);
+}
+
+function updateSearchCounter() {
+  const counter = document.getElementById('search-results-count');
+  if (counter) {
+    if (searchMatches.length > 0) {
+      counter.textContent = `${currentSearchIndex + 1} / ${searchMatches.length}`;
+    } else {
+      counter.textContent = '0 / 0';
+    }
   }
 }
 
