@@ -226,6 +226,7 @@ html, body {
   background-color: var(--bg-base);
   cursor: grab;
   overflow: hidden;
+  touch-action: none;
 }
 
 .canvas-container:active {
@@ -968,7 +969,44 @@ kbd {
 @media (max-width: 768px) {
   /* Header adjustments */
   .app-header {
-    padding: 0 12px;
+    padding: 0 8px;
+    gap: 4px;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .header-logo {
+    flex-shrink: 0;
+    min-width: 0;
+  }
+
+  .header-logo h1 {
+    display: none;
+  }
+
+  .header-logo .logo-icon {
+    font-size: 24px;
+  }
+
+  .header-actions {
+    flex: 1;
+    min-width: 0;
+    justify-content: flex-end;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 4px;
+    padding-bottom: 2px;
+  }
+
+  .header-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .icon-btn {
+    padding: 8px;
+    flex-shrink: 0;
   }
   
   .btn-text {
@@ -976,6 +1014,7 @@ kbd {
   }
   
   .divider {
+    display: none;
     margin: 0 2px;
   }
   
@@ -1046,6 +1085,11 @@ kbd {
   .mindmap-node.editing {
     font-size: 16px !important;
   }
+}
+
+/* iOS (all browsers): CSS transform on SVG is driven from script.js */
+html.ios-browser #mindmap-svg {
+  will-change: transform;
 }
 
 /* Drag and Drop Styles */

@@ -21,24 +21,35 @@ try {
   console.error("Failed to read version from tauri.conf.json:", e);
 }
 
-// Files to copy/process
-const files = ['index.html', 'script.js', 'style.css'];
+// Load source contents
+const htmlSrc = path.join(__dirname, 'index.html');
+const cssSrc = path.join(__dirname, 'style.css');
+const jsSrc = path.join(__dirname, 'script.js');
 
-files.forEach(file => {
-  const src = path.join(__dirname, file);
-  const dest = path.join(destDir, file);
-  if (fs.existsSync(src)) {
-    if (file === 'index.html') {
-      // Replace placeholder with version in index.html during copy
-      let content = fs.readFileSync(src, 'utf8');
-      content = content.replace(/__APP_VERSION__/g, version);
-      fs.writeFileSync(dest, content, 'utf8');
-      console.log(`Processed and copied ${file} to www/ (injected version: ${version})`);
-    } else {
-      fs.copyFileSync(src, dest);
-      console.log(`Copied ${file} to www/`);
-    }
-  } else {
-    console.error(`Source file ${file} not found!`);
-  }
-});
+if (fs.existsSync(htmlSrc) && fs.existsSync(cssSrc) && fs.existsSync(jsSrc)) {
+  let htmlContent = fs.readFileSync(htmlSrc, 'utf8');
+  const cssContent = fs.readFileSync(cssSrc, 'utf8');
+  const jsContent = fs.readFileSync(jsSrc, 'utf8');
+
+  // Replace version placeholder
+  htmlContent = htmlContent.replace(/__APP_VERSION__/g, version);
+
+  // Inline CSS - replace the stylesheet link tag
+  const cssTag = `<style>\n${cssContent}\n</style>`;
+  htmlContent = htmlContent.replace(/<link[^>]*href=["']style\.css[^"']*["'][^>]*>/i, cssTag);
+
+  // Inline JS - replace the script tag
+  const jsTag = `<script>\n${jsContent}\n</script>`;
+  htmlContent = htmlContent.replace(/<script[^>]*src=["']script\.js[^"']*["'][^>]*><\/script>/i, jsTag);
+
+  // Write single compiled HTML file
+  const destHtml = path.join(destDir, 'index.html');
+  fs.writeFileSync(destHtml, htmlContent, 'utf8');
+  console.log(`Successfully compiled and inlined all assets into a single HTML file: www/index.html`);
+  
+  // Also copy raw files to www/ just in case Tauri configuration or debug modes reference them
+  fs.copyFileSync(cssSrc, path.join(destDir, 'style.css'));
+  fs.copyFileSync(jsSrc, path.join(destDir, 'script.js'));
+} else {
+  console.error("Required source files not found!");
+}

@@ -308,6 +308,28 @@ let connectionsGroup;
 let sidebar;
 let fileInput;
 
+// iOS / iPadOS (all browsers use WebKit): SVG <g transform> is not applied to <foreignObject>.
+// Use CSS transform on the SVG element instead (desktop WebView / browsers keep SVG transform).
+const isIOSBrowser = (() => {
+  const ua = navigator.userAgent || '';
+  return /iPhone|iPad|iPod/.test(ua)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+})();
+
+if (isIOSBrowser) {
+  document.documentElement.classList.add('ios-browser');
+}
+
+function getCanvasDimensions() {
+  const el = isIOSBrowser ? canvasContainer : svg;
+  const rect = el ? el.getBoundingClientRect() : { width: 0, height: 0 };
+  const headerHeight = 64;
+  return {
+    width: rect.width || window.innerWidth,
+    height: rect.height || (window.innerHeight - headerHeight)
+  };
+}
+
 // --- Helper Functions ---
 
 // Generate unique ID for nodes
@@ -357,7 +379,9 @@ function saveToLocalStorage() {
 
 // Convert client coordinates to SVG viewport coordinates
 function getSvgCoordinates(clientX, clientY) {
-  const rect = svg.getBoundingClientRect();
+  const rect = isIOSBrowser
+    ? canvasContainer.getBoundingClientRect()
+    : svg.getBoundingClientRect();
   return {
     x: (clientX - rect.left - translateX) / scale,
     y: (clientY - rect.top - translateY) / scale
@@ -1442,11 +1466,18 @@ function deleteNode(nodeId = activeNodeId) {
 // --- Zoom & Pan Management ---
 
 function updateViewportTransform() {
-  viewport.setAttribute('transform', `translate(${translateX}, ${translateY}) scale(${scale})`);
-  
-  // Force WebKit/Safari to repaint the SVG canvas to prevent rendering trails of foreignObject elements
-  svg.style.opacity = svg.style.opacity === '0.999' ? '1' : '0.999';
-  
+  if (isIOSBrowser) {
+    viewport.setAttribute('transform', 'translate(0, 0) scale(1)');
+    svg.style.transformOrigin = '0 0';
+    svg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+  } else {
+    svg.style.transform = '';
+    svg.style.transformOrigin = '';
+    viewport.setAttribute('transform', `translate(${translateX}, ${translateY}) scale(${scale})`);
+    // Force WebKit/Safari to repaint the SVG canvas to prevent rendering trails of foreignObject elements
+    svg.style.opacity = svg.style.opacity === '0.999' ? '1' : '0.999';
+  }
+
   // Update UI Zoom Level indicator
   document.getElementById('zoom-level').textContent = `${Math.round(scale * 100)}%`;
 }
@@ -1455,9 +1486,7 @@ function zoomTo(targetScale, mouseX = null, mouseY = null) {
   const oldScale = scale;
   scale = Math.min(Math.max(0.15, targetScale), 3.0);
   
-  const rect = svg.getBoundingClientRect();
-  const rectW = rect.width || window.innerWidth;
-  const rectH = rect.height || (window.innerHeight - 64);
+  const { width: rectW, height: rectH } = getCanvasDimensions();
   const cx = mouseX !== null ? mouseX : rectW / 2;
   const cy = mouseY !== null ? mouseY : rectH / 2;
   
@@ -1472,9 +1501,7 @@ function zoom(factor, mouseX = null, mouseY = null) {
 }
 
 function centerMindMap() {
-  const rect = svg.getBoundingClientRect();
-  const rectW = rect.width || window.innerWidth;
-  const rectH = rect.height || (window.innerHeight - 64);
+  const { width: rectW, height: rectH } = getCanvasDimensions();
   translateX = rectW / 2;
   translateY = rectH / 2;
   scale = 1.0;
@@ -1484,9 +1511,7 @@ function centerMindMap() {
 }
 
 function fitToScreen() {
-  const rect = svg.getBoundingClientRect();
-  const rectW = rect.width || window.innerWidth;
-  const rectH = rect.height || (window.innerHeight - 64);
+  const { width: rectW, height: rectH } = getCanvasDimensions();
   lastSvgWidth = rectW;
   lastSvgHeight = rectH;
   
@@ -1794,6 +1819,8 @@ function importJSON(e) {
 // Helper to bundle CSS styles inside SVG for image outputs
 function getStyledSVGPicture() {
   const svgClone = svg.cloneNode(true);
+  svgClone.style.transform = '';
+  svgClone.style.transformOrigin = '';
   
   // Remove interactive background grids/controls
   const bgGrid = svgClone.querySelector('.background-grid');
@@ -2491,24 +2518,24 @@ function setupEventListeners() {
       touchStartDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
       touchStartScale = scale;
       
-      const rect = svg.getBoundingClientRect();
+      const rect = canvasContainer.getBoundingClientRect();
       lastTouchCenterX = ((t1.clientX + t2.clientX) / 2) - rect.left;
       lastTouchCenterY = ((t1.clientY + t2.clientY) / 2) - rect.top;
     }
-  }, { passive: true });
+  }, { passive: false });
 
   svg.addEventListener('touchmove', (e) => {
     if (isTouchDragging && e.touches.length === 1) {
-      e.preventDefault(); // Cancel browser-native scrolling/page-bounce on drag
+      e.preventDefault();
       const touch = e.touches[0];
       translateX = touch.clientX - startX;
       translateY = touch.clientY - startY;
       updateViewportTransform();
     } else if (e.touches.length === 2) {
-      e.preventDefault(); // Cancel browser-native zoom behavior
+      e.preventDefault();
       const t1 = e.touches[0];
       const t2 = e.touches[1];
-      const rect = svg.getBoundingClientRect();
+      const rect = canvasContainer.getBoundingClientRect();
       const cx = ((t1.clientX + t2.clientX) / 2) - rect.left;
       const cy = ((t1.clientY + t2.clientY) / 2) - rect.top;
       
@@ -3128,16 +3155,19 @@ SOFTWARE.`;
     });
   });
 
-  // Disable Safari's default pinch-to-zoom on the document level
-  window.addEventListener('gesturestart', (e) => {
-    e.preventDefault();
-  }, { passive: false });
-  window.addEventListener('gesturechange', (e) => {
-    e.preventDefault();
-  }, { passive: false });
+  // Disable Safari's default pinch-to-zoom on the document level (iOS only)
+  if (isIOSBrowser) {
+    window.addEventListener('gesturestart', (e) => {
+      e.preventDefault();
+    }, { passive: false });
+    window.addEventListener('gesturechange', (e) => {
+      e.preventDefault();
+    }, { passive: false });
+  }
 
   // Prevent page bounce and horizontal viewport scroll on iOS Safari
   document.addEventListener('touchmove', (e) => {
+    if (e.touches.length >= 2) return;
     const isScrollable = e.target.closest('.sidebar-content') || e.target.closest('.modal-body');
     const isInteractive = e.target.closest('button') || e.target.closest('a') || e.target.closest('input') || e.target.closest('.app-header');
     if (!isScrollable && !isInteractive) {
@@ -3203,6 +3233,30 @@ function escapeHtml(str) {
 }
 
 let isInitialLayout = true;
+let visualViewportResizeTimer = null;
+
+function scheduleInitialFit() {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      fitToScreen();
+    });
+  });
+}
+
+function onVisualViewportResize() {
+  if (!isIOSBrowser || !window.visualViewport) return;
+  clearTimeout(visualViewportResizeTimer);
+  visualViewportResizeTimer = setTimeout(() => {
+    const { width, height } = getCanvasDimensions();
+    if (width > 0 && height > 0 && lastSvgWidth > 0 && lastSvgHeight > 0) {
+      translateX += (width - lastSvgWidth) / 2;
+      translateY += (height - lastSvgHeight) / 2;
+      lastSvgWidth = width;
+      lastSvgHeight = height;
+      updateViewportTransform();
+    }
+  }, 80);
+}
 
 // Resize observer to maintain canvas center on size changes
 const resizeObserver = new ResizeObserver((entries) => {
@@ -3215,7 +3269,11 @@ const resizeObserver = new ResizeObserver((entries) => {
         isInitialLayout = false;
         lastSvgWidth = width;
         lastSvgHeight = height;
-        fitToScreen();
+        if (isIOSBrowser) {
+          scheduleInitialFit();
+        } else {
+          fitToScreen();
+        }
       } else {
         if (lastSvgWidth > 0 && lastSvgHeight > 0) {
           translateX += (width - lastSvgWidth) / 2;
@@ -3243,7 +3301,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Handle fallback version display if placeholder isn't replaced by build script
   const versionSpan = document.querySelector('.app-version');
   if (versionSpan && versionSpan.textContent.includes('__APP_VERSION__')) {
-    versionSpan.textContent = 'v0.12.1'; // Fallback value from tauri.conf.json
+    versionSpan.textContent = 'v0.12.2'; // Fallback value from tauri.conf.json
   }
 
   // Apply UI translations based on system language
@@ -3257,13 +3315,22 @@ window.addEventListener('DOMContentLoaded', () => {
   
   // Start observing canvas container size changes (HTML div is reliable on WebKit)
   resizeObserver.observe(canvasContainer);
+
+  if (isIOSBrowser && window.visualViewport) {
+    window.visualViewport.addEventListener('resize', onVisualViewportResize);
+    window.visualViewport.addEventListener('scroll', onVisualViewportResize);
+  }
 });
 
 // Window load event listener to ensure correct initial centering after all styles are loaded
 window.addEventListener('load', () => {
   isInitialLayout = false;
   renderMindMap();
-  fitToScreen();
+  if (isIOSBrowser) {
+    scheduleInitialFit();
+  } else {
+    fitToScreen();
+  }
 });
 
 // Lock window and sub-container scroll positions permanently to prevent iOS Safari auto-scroll on element updates
@@ -3349,9 +3416,7 @@ function centerOnNode(nodeId) {
   const node = findNodeById(mindMapData, nodeId);
   if (!node) return;
   
-  const rect = svg.getBoundingClientRect();
-  const rectW = rect.width || window.innerWidth;
-  const rectH = rect.height || (window.innerHeight - 64);
+  const { width: rectW, height: rectH } = getCanvasDimensions();
   
   translateX = rectW / 2 - node.x * scale;
   translateY = rectH / 2 - node.y * scale;
