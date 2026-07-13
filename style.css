@@ -244,6 +244,17 @@ html, body {
   z-index: 0;
 }
 
+/* HTML marquee selection overlay (reliable on WebKit; also used on all platforms) */
+.marquee-overlay {
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: none;
+  z-index: 2;
+  display: none;
+  border: 1.5px dashed var(--accent);
+  background: rgba(137, 180, 250, 0.15);
+}
+
 /* SVG Elements styles */
 #mindmap-svg {
   position: absolute;

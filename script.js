@@ -261,8 +261,11 @@ let currentFilePath = null;
 let activeNodeId = 'root';
 let selectedNodeIds = new Set(['root']); // Multiple selection state
 let isSelectingArea = false;
+let isAreaSelectDragged = false;
 let selectionStartWorldX = 0;
 let selectionStartWorldY = 0;
+let selectionStartClientX = 0;
+let selectionStartClientY = 0;
 let tempSelectedNodeIds = new Set();
 let isCanvasDragged = false;
 let isEditing = false;
@@ -310,6 +313,7 @@ let nodesGroup;
 let connectionsGroup;
 let togglesGroup;
 let connectionsCanvas;
+let marqueeOverlay;
 let sidebar;
 let fileInput;
 
@@ -1013,6 +1017,33 @@ function appendConnectionPathsToGroup(group, segments) {
   });
 }
 
+function initMarqueeOverlay() {
+  if (!canvasContainer || marqueeOverlay) return;
+  marqueeOverlay = document.createElement('div');
+  marqueeOverlay.id = 'marquee-overlay';
+  marqueeOverlay.className = 'marquee-overlay';
+  marqueeOverlay.setAttribute('aria-hidden', 'true');
+  canvasContainer.appendChild(marqueeOverlay);
+}
+
+function updateMarqueeOverlay(clientX, clientY) {
+  if (!marqueeOverlay || !canvasContainer) return;
+  const rect = canvasContainer.getBoundingClientRect();
+  const left = Math.min(selectionStartClientX, clientX) - rect.left;
+  const top = Math.min(selectionStartClientY, clientY) - rect.top;
+  const width = Math.abs(clientX - selectionStartClientX);
+  const height = Math.abs(clientY - selectionStartClientY);
+  marqueeOverlay.style.left = `${left}px`;
+  marqueeOverlay.style.top = `${top}px`;
+  marqueeOverlay.style.width = `${width}px`;
+  marqueeOverlay.style.height = `${height}px`;
+  marqueeOverlay.style.display = 'block';
+}
+
+function hideMarqueeOverlay() {
+  if (marqueeOverlay) marqueeOverlay.style.display = 'none';
+}
+
 function drawWebKitConnectionsCanvas() {
   if (!isAppleWebKit || !connectionsCanvas) return;
   resizeConnectionsCanvas();
@@ -1042,6 +1073,7 @@ function drawWebKitConnectionsCanvas() {
     );
     ctx.stroke();
   });
+
   ctx.restore();
 }
 
@@ -2522,26 +2554,18 @@ function setupEventListeners() {
 
     if (!e.target.closest('.mindmap-node')) {
       if (e.shiftKey || e.ctrlKey || e.metaKey) {
+        e.preventDefault();
         isSelectingArea = true;
+        isAreaSelectDragged = false;
         isCanvasDragged = false;
 
         const mouseSvg = getSvgCoordinates(e.clientX, e.clientY);
         selectionStartWorldX = mouseSvg.x;
         selectionStartWorldY = mouseSvg.y;
+        selectionStartClientX = e.clientX;
+        selectionStartClientY = e.clientY;
 
-        let selBox = document.getElementById('selection-box');
-        if (!selBox) {
-          selBox = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-          selBox.setAttribute('id', 'selection-box');
-          selBox.setAttribute('class', 'selection-box');
-          viewport.appendChild(selBox);
-        }
-        selBox.setAttribute('x', selectionStartWorldX);
-        selBox.setAttribute('y', selectionStartWorldY);
-        selBox.setAttribute('width', 0);
-        selBox.setAttribute('height', 0);
-        selBox.style.display = 'block';
-
+        updateMarqueeOverlay(e.clientX, e.clientY);
         tempSelectedNodeIds.clear();
       } else {
         isDragging = true;
@@ -2559,21 +2583,18 @@ function setupEventListeners() {
 
   window.addEventListener('mousemove', (e) => {
     if (isSelectingArea) {
-      isCanvasDragged = true;
       const mouseSvg = getSvgCoordinates(e.clientX, e.clientY);
-      
+
       const x = Math.min(selectionStartWorldX, mouseSvg.x);
       const y = Math.min(selectionStartWorldY, mouseSvg.y);
       const width = Math.abs(selectionStartWorldX - mouseSvg.x);
       const height = Math.abs(selectionStartWorldY - mouseSvg.y);
-      
-      const selBox = document.getElementById('selection-box');
-      if (selBox) {
-        selBox.setAttribute('x', x);
-        selBox.setAttribute('y', y);
-        selBox.setAttribute('width', width);
-        selBox.setAttribute('height', height);
+
+      if (width > 2 || height > 2) {
+        isAreaSelectDragged = true;
       }
+
+      updateMarqueeOverlay(e.clientX, e.clientY);
       
       const rectLeft = x;
       const rectRight = x + width;
@@ -2700,8 +2721,12 @@ function setupEventListeners() {
   window.addEventListener('mouseup', () => {
     if (isSelectingArea) {
       isSelectingArea = false;
-      const selBox = document.getElementById('selection-box');
-      if (selBox) selBox.style.display = 'none';
+      hideMarqueeOverlay();
+
+      if (isAreaSelectDragged) {
+        suppressCanvasBackgroundClick = true;
+      }
+      isAreaSelectDragged = false;
       
       // Confirm selection
       selectedNodeIds.clear();
@@ -3567,13 +3592,15 @@ window.addEventListener('DOMContentLoaded', () => {
   // Handle fallback version display if placeholder isn't replaced by build script
   const versionSpan = document.querySelector('.app-version');
   if (versionSpan && versionSpan.textContent.includes('__APP_VERSION__')) {
-    versionSpan.textContent = 'v0.12.3'; // Fallback value from tauri.conf.json
+    versionSpan.textContent = 'v0.12.4'; // Fallback value from tauri.conf.json
   }
 
   // Apply UI translations based on system language
   applyTranslations();
 
   setupEventListeners();
+
+  initMarqueeOverlay();
 
   if (isAppleWebKit) {
     initWebKitConnectionsCanvas();
