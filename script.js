@@ -335,8 +335,11 @@ if (isAppleWebKit) {
   document.documentElement.classList.add('apple-webkit');
 }
 
+// WebKit (iOS + macOS WKWebView): parent <g transform> does not affect <foreignObject>; use CSS transform on SVG.
+const useCssSvgTransform = isAppleWebKit;
+
 function getCanvasDimensions() {
-  const el = isIOSBrowser ? canvasContainer : svg;
+  const el = useCssSvgTransform ? canvasContainer : svg;
   const rect = el ? el.getBoundingClientRect() : { width: 0, height: 0 };
   const headerHeight = 64;
   return {
@@ -394,7 +397,7 @@ function saveToLocalStorage() {
 
 // Convert client coordinates to SVG viewport coordinates
 function getSvgCoordinates(clientX, clientY) {
-  const rect = isIOSBrowser
+  const rect = useCssSvgTransform
     ? canvasContainer.getBoundingClientRect()
     : svg.getBoundingClientRect();
   return {
@@ -1518,7 +1521,7 @@ function deleteNode(nodeId = activeNodeId) {
 // --- Zoom & Pan Management ---
 
 function updateViewportTransform() {
-  if (isIOSBrowser) {
+  if (useCssSvgTransform) {
     viewport.setAttribute('transform', 'translate(0, 0) scale(1)');
     svg.style.transformOrigin = '0 0';
     svg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
@@ -1526,8 +1529,6 @@ function updateViewportTransform() {
     svg.style.transform = '';
     svg.style.transformOrigin = '';
     viewport.setAttribute('transform', `translate(${translateX}, ${translateY}) scale(${scale})`);
-    // Force WebKit/Safari to repaint the SVG canvas to prevent rendering trails of foreignObject elements
-    svg.style.opacity = svg.style.opacity === '0.999' ? '1' : '0.999';
   }
 
   // Update UI Zoom Level indicator
@@ -3323,11 +3324,11 @@ const resizeObserver = new ResizeObserver((entries) => {
         lastSvgHeight = height;
         if (isIOSBrowser) {
           scheduleInitialFit();
-        } else if (isAppleWebKit) {
-          fitToScreen();
-          forceWebKitRepaint();
         } else {
           fitToScreen();
+          if (isAppleWebKit) {
+            forceWebKitRepaint();
+          }
         }
       } else {
         if (lastSvgWidth > 0 && lastSvgHeight > 0) {

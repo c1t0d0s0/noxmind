@@ -1087,8 +1087,9 @@ kbd {
   }
 }
 
-/* iOS (all browsers): CSS transform on SVG is driven from script.js */
-html.ios-browser #mindmap-svg {
+/* Apple WebKit (iOS + macOS): CSS transform on SVG is driven from script.js */
+html.ios-browser #mindmap-svg,
+html.apple-webkit #mindmap-svg {
   will-change: transform;
 }
 
