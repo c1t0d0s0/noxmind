@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const destDir = path.join(__dirname, 'www');
+const inline = process.argv.includes('--inline');
 
 // Create dest directory if it doesn't exist
 if (!fs.existsSync(destDir)) {
@@ -18,38 +19,36 @@ try {
     console.log(`Found version ${version} in tauri.conf.json`);
   }
 } catch (e) {
-  console.error("Failed to read version from tauri.conf.json:", e);
+  console.error('Failed to read version from tauri.conf.json:', e);
 }
 
-// Load source contents
 const htmlSrc = path.join(__dirname, 'index.html');
 const cssSrc = path.join(__dirname, 'style.css');
 const jsSrc = path.join(__dirname, 'script.js');
 
-if (fs.existsSync(htmlSrc) && fs.existsSync(cssSrc) && fs.existsSync(jsSrc)) {
-  let htmlContent = fs.readFileSync(htmlSrc, 'utf8');
-  const cssContent = fs.readFileSync(cssSrc, 'utf8');
-  const jsContent = fs.readFileSync(jsSrc, 'utf8');
+if (!fs.existsSync(htmlSrc) || !fs.existsSync(cssSrc) || !fs.existsSync(jsSrc)) {
+  console.error('Required source files not found!');
+  process.exit(1);
+}
 
-  // Replace version placeholder
-  htmlContent = htmlContent.replace(/__APP_VERSION__/g, version);
+let htmlContent = fs.readFileSync(htmlSrc, 'utf8');
+const cssContent = fs.readFileSync(cssSrc, 'utf8');
+const jsContent = fs.readFileSync(jsSrc, 'utf8');
 
-  // Inline CSS - replace the stylesheet link tag
+htmlContent = htmlContent.replace(/__APP_VERSION__/g, version);
+
+if (inline) {
   const cssTag = `<style>\n${cssContent}\n</style>`;
   htmlContent = htmlContent.replace(/<link[^>]*href=["']style\.css[^"']*["'][^>]*>/i, cssTag);
 
-  // Inline JS - replace the script tag
   const jsTag = `<script>\n${jsContent}\n</script>`;
   htmlContent = htmlContent.replace(/<script[^>]*src=["']script\.js[^"']*["'][^>]*><\/script>/i, jsTag);
 
-  // Write single compiled HTML file
-  const destHtml = path.join(destDir, 'index.html');
-  fs.writeFileSync(destHtml, htmlContent, 'utf8');
-  console.log(`Successfully compiled and inlined all assets into a single HTML file: www/index.html`);
-  
-  // Also copy raw files to www/ just in case Tauri configuration or debug modes reference them
+  fs.writeFileSync(path.join(destDir, 'index.html'), htmlContent, 'utf8');
+  console.log(`Built single-file HTML (inlined CSS/JS): www/index.html (version: ${version})`);
+} else {
+  fs.writeFileSync(path.join(destDir, 'index.html'), htmlContent, 'utf8');
   fs.copyFileSync(cssSrc, path.join(destDir, 'style.css'));
   fs.copyFileSync(jsSrc, path.join(destDir, 'script.js'));
-} else {
-  console.error("Required source files not found!");
+  console.log(`Copied index.html, style.css, script.js to www/ (version: ${version})`);
 }

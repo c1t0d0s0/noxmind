@@ -316,8 +316,23 @@ const isIOSBrowser = (() => {
     || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 })();
 
+// macOS Safari / WKWebView (Tauri): foreignObject layout and SVG repaint need extra care.
+const isAppleWebKit = (() => {
+  if (isIOSBrowser) return true;
+  const ua = navigator.userAgent || '';
+  return /Macintosh|Mac OS X/.test(ua)
+    && /AppleWebKit/i.test(ua)
+    && !/Chrome|Chromium|Edg/i.test(ua);
+})();
+
+const WEBKIT_FO_HEIGHT_PAD = 4;
+let renderMindMapGeneration = 0;
+
 if (isIOSBrowser) {
   document.documentElement.classList.add('ios-browser');
+}
+if (isAppleWebKit) {
+  document.documentElement.classList.add('apple-webkit');
 }
 
 function getCanvasDimensions() {
@@ -893,13 +908,33 @@ function getNodeWidth(node) {
 /**
  * Helper to measure rendered node height
  */
-function measureNodeHeights(node) {
+function measureNodeElementHeight(el, depth = 0) {
+  const minHeight = depth === 0 ? 58 : 44;
+  if (!el) return minHeight;
+  return Math.ceil(Math.max(
+    el.offsetHeight || 0,
+    el.scrollHeight || 0,
+    el.getBoundingClientRect().height || 0,
+    minHeight
+  ));
+}
+
+function getForeignObjectHeight(node, depth = 0) {
+  const base = node.height || (depth === 0 ? 58 : 44);
+  return isAppleWebKit ? base + WEBKIT_FO_HEIGHT_PAD : base;
+}
+
+function forceWebKitRepaint() {
+  if (!svg || !viewport) return;
+  updateViewportTransform();
+}
+
+/**
+ * Measure all node heights from temporary DOM elements, then remove them.
+ */
+function measureNodeHeights(node, depth = 0) {
   const el = document.querySelector(`#measure-${node.id} .mindmap-node`);
-  if (el) {
-    node.height = el.offsetHeight || 40;
-  } else {
-    node.height = 40;
-  }
+  node.height = measureNodeElementHeight(el, depth);
   node.width = getNodeWidth(node);
   
   // Clean up temporary measuring elements
@@ -907,7 +942,7 @@ function measureNodeHeights(node) {
   if (measureFo) measureFo.remove();
 
   if (node.children && !node.collapsed) {
-    node.children.forEach(child => measureNodeHeights(child));
+    node.children.forEach(child => measureNodeHeights(child, depth + 1));
   }
 }
 
@@ -1015,25 +1050,41 @@ function renderMindMap() {
 
   // 1st Pass: Create invisible nodes to measure heights
   createInvisibleNodes(mindMapData);
-  
-  // Wait a small tick for browser layout, then measure and arrange
-  // Since we need immediate sync rendering for smooth interactions,
-  // we do the measurement in DOM synchronously (it works because elements are added).
-  measureNodeHeights(mindMapData);
-  
-  // 2nd Pass: Calculate layout positions
-  calculateSubtreeHeights(mindMapData);
-  layoutSubtree(mindMapData, 0, 0, 1);
 
-  // Render nodes and connections
-  renderNode(mindMapData, 0);
-  renderConnections(mindMapData);
+  const generation = ++renderMindMapGeneration;
 
-  // Update properties sidebar values
-  updateSidebar();
+  const finishLayout = () => {
+    if (generation !== renderMindMapGeneration) return;
 
-  // Update Layout Mode Button UI
-  updateLayoutModeUI();
+    measureNodeHeights(mindMapData);
+
+    // 2nd Pass: Calculate layout positions
+    calculateSubtreeHeights(mindMapData);
+    layoutSubtree(mindMapData, 0, 0, 1);
+
+    // Render nodes and connections
+    renderNode(mindMapData, 0);
+    renderConnections(mindMapData);
+
+    // Update properties sidebar values
+    updateSidebar();
+
+    // Update Layout Mode Button UI
+    updateLayoutModeUI();
+
+    if (isAppleWebKit) {
+      forceWebKitRepaint();
+    }
+  };
+
+  // WebKit needs a layout tick before foreignObject height measurement is reliable
+  if (isAppleWebKit) {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(finishLayout);
+    });
+  } else {
+    finishLayout();
+  }
 }
 
 /**
@@ -1090,11 +1141,12 @@ function renderConnections(node) {
  */
 function renderNode(node, depth) {
   const fo = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+  const foHeight = getForeignObjectHeight(node, depth);
   fo.setAttribute('id', `fo-${node.id}`);
   fo.setAttribute('x', node.x - node.width / 2);
-  fo.setAttribute('y', node.y - node.height / 2);
+  fo.setAttribute('y', node.y - foHeight / 2);
   fo.setAttribute('width', node.width);
-  fo.setAttribute('height', node.height);
+  fo.setAttribute('height', foHeight);
   fo.setAttribute('class', 'mindmap-node-wrapper');
   
   const div = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
@@ -3271,6 +3323,9 @@ const resizeObserver = new ResizeObserver((entries) => {
         lastSvgHeight = height;
         if (isIOSBrowser) {
           scheduleInitialFit();
+        } else if (isAppleWebKit) {
+          fitToScreen();
+          forceWebKitRepaint();
         } else {
           fitToScreen();
         }
@@ -3301,7 +3356,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Handle fallback version display if placeholder isn't replaced by build script
   const versionSpan = document.querySelector('.app-version');
   if (versionSpan && versionSpan.textContent.includes('__APP_VERSION__')) {
-    versionSpan.textContent = 'v0.12.2'; // Fallback value from tauri.conf.json
+    versionSpan.textContent = 'v0.12.3'; // Fallback value from tauri.conf.json
   }
 
   // Apply UI translations based on system language
@@ -3330,6 +3385,9 @@ window.addEventListener('load', () => {
     scheduleInitialFit();
   } else {
     fitToScreen();
+    if (isAppleWebKit) {
+      forceWebKitRepaint();
+    }
   }
 });
 

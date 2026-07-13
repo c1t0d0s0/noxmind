@@ -1092,6 +1092,15 @@ html.ios-browser #mindmap-svg {
   will-change: transform;
 }
 
+/* Apple WebKit: avoid stroke transition glitches; extra foreignObject height pad from script.js */
+html.apple-webkit .connection-path {
+  transition: none;
+}
+
+html.apple-webkit .mindmap-node-wrapper {
+  overflow: visible !important;
+}
+
 /* Drag and Drop Styles */
 .mindmap-node.drop-target.drop-child {
   border-style: dashed !important;
