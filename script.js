@@ -1890,6 +1890,18 @@ function checkIsTauri() {
   }
 }
 
+function isMobileTauri() {
+  if (!checkIsTauri()) return false;
+  const ua = navigator.userAgent || '';
+  return /Android/i.test(ua)
+    || /iPhone|iPad|iPod/.test(ua)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function usesWebFileIO() {
+  return !checkIsTauri() || isMobileTauri();
+}
+
 async function saveNative(asDialog = false) {
   const isMM = currentFilePath && currentFilePath.toLowerCase().endsWith('.mm');
   const isXMind = currentFilePath && currentFilePath.toLowerCase().endsWith('.xmind');
@@ -3015,10 +3027,10 @@ function setupEventListeners() {
   const btnImport = document.getElementById('btn-import');
   if (btnImport) {
     btnImport.addEventListener('click', () => {
-      if (checkIsTauri()) {
-        openNative();
-      } else {
+      if (usesWebFileIO()) {
         if (fileInput) fileInput.click();
+      } else {
+        openNative();
       }
     });
   }
@@ -3030,8 +3042,8 @@ function setupEventListeners() {
   const saveDropdownToggle = document.getElementById('btn-save-dropdown');
   const saveDropdownMenu = saveDropdownToggle ? (document.querySelector('#btn-save-dropdown + .dropdown-menu') || saveDropdownToggle.nextElementSibling) : null;
 
-  if (!checkIsTauri()) {
-    // Web Mode: Turn dropdown button into a direct export button
+  if (usesWebFileIO()) {
+    // Web / mobile Tauri: direct JSON export (no native file dialog)
     if (saveDropdownToggle) {
       saveDropdownToggle.classList.remove('dropdown-toggle');
       // Set to normal save title
@@ -3592,7 +3604,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Handle fallback version display if placeholder isn't replaced by build script
   const versionSpan = document.querySelector('.app-version');
   if (versionSpan && versionSpan.textContent.includes('__APP_VERSION__')) {
-    versionSpan.textContent = 'v0.12.4'; // Fallback value from tauri.conf.json
+    versionSpan.textContent = 'v0.12.5'; // Fallback value from tauri.conf.json
   }
 
   // Apply UI translations based on system language

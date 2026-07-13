@@ -6,6 +6,7 @@ pub struct OpenResult {
     content: String,
 }
 
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 #[tauri::command]
 async fn save_file_dialog(data: String) -> Result<Option<String>, String> {
     let file_path = rfd::AsyncFileDialog::new()
@@ -23,12 +24,19 @@ async fn save_file_dialog(data: String) -> Result<Option<String>, String> {
     }
 }
 
+#[cfg(any(target_os = "android", target_os = "ios"))]
+#[tauri::command]
+async fn save_file_dialog(_data: String) -> Result<Option<String>, String> {
+    Err("File dialogs are not supported on mobile".into())
+}
+
 #[tauri::command]
 fn save_file(path: String, data: String) -> Result<(), String> {
     fs::write(&path, data).map_err(|e| e.to_string())?;
     Ok(())
 }
 
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 #[tauri::command]
 async fn open_file_dialog() -> Result<Option<OpenResult>, String> {
     let file_path = rfd::AsyncFileDialog::new()
@@ -55,6 +63,12 @@ async fn open_file_dialog() -> Result<Option<OpenResult>, String> {
     } else {
         Ok(None)
     }
+}
+
+#[cfg(any(target_os = "android", target_os = "ios"))]
+#[tauri::command]
+async fn open_file_dialog() -> Result<Option<OpenResult>, String> {
+    Err("File dialogs are not supported on mobile".into())
 }
 
 fn base64_encode(bytes: &[u8]) -> String {
