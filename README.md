@@ -31,11 +31,14 @@ It supports organizing thoughts and brainstorming ideas with intuitive and light
    * Once enabled, subsequent new child/sibling nodes automatically inherit the borderless style.
 
 6. **Local Export / Import & Auto-Save**
-   * Export the entire mind map as a `.json` file to your local machine.
-   * Import saved `.json` files to resume editing, or load FreeMind `.mm` XML and XMind `.xmind` files directly.
+   * Export the entire mind map as a custom `.json` file to your local machine, allowing you to reload and resume editing later.
    * All progress is auto-saved to browser `localStorage` to prevent data loss.
 
-7. **High-Quality Image Export (PNG / SVG)**
+7. **Flexible Import & Export Support**
+   * **Export**: Output your mind maps not only in custom `.json` but also in **FreeMind format (`.mm`)** and **XMind format (`.xmind`)** to seamlessly migrate your data to other mind mapping applications.
+   * **Import**: Import saved `.json` files, or directly load FreeMind `.mm` XML and XMind `.xmind` files.
+
+8. **High-Quality Image Export (PNG / SVG)**
    * Download the mind map in standard `SVG` vector format or `PNG` raster image.
    * Security constraints (Tainted Canvas error) are completely bypassed using a native SVG element conversion engine, rendering safe exports in any browser.
 
