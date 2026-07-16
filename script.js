@@ -11,9 +11,12 @@ const TRANSLATIONS = {
     "btn-new": "新規",
     "btn-import": "開く",
     "btn-export": "保存",
-    "btn-export-image": "画像出力",
+    "btn-export-dropdown-title": "エクスポートメニューを開く",
+    "btn-export-dropdown": "エクスポート",
     "btn-export-png": "PNG画像",
     "btn-export-svg": "SVG画像",
+    "btn-export-xmind": "XMind形式 (.xmind)",
+    "btn-export-freemind": "FreeMind形式 (.mm)",
     "btn-help": "ヘルプ",
     "btn-fit": "全体表示",
     "btn-center": "中央寄せ",
@@ -105,9 +108,12 @@ const TRANSLATIONS = {
     "btn-new": "New",
     "btn-import": "Open",
     "btn-export": "Save",
-    "btn-export-image": "Export Image",
+    "btn-export-dropdown-title": "Open Export Menu",
+    "btn-export-dropdown": "Export",
     "btn-export-png": "PNG Image",
     "btn-export-svg": "SVG Image",
+    "btn-export-xmind": "XMind (.xmind)",
+    "btn-export-freemind": "FreeMind (.mm)",
     "btn-help": "Help",
     "btn-fit": "Fit to Screen",
     "btn-center": "Center View",
@@ -2368,6 +2374,151 @@ function exportPNG() {
   img.src = url;
 }
 
+// Export as FreeMind (.mm)
+function exportFreeMind() {
+  function escapeXml(unsafe) {
+    if (typeof unsafe !== 'string') return '';
+    return unsafe.replace(/[<>&'"]/g, function (c) {
+      switch (c) {
+        case '<': return '&lt;';
+        case '>': return '&gt;';
+        case '&': return '&amp;';
+        case '\'': return '&apos;';
+        case '"': return '&quot;';
+      }
+    });
+  }
+
+  function nodeToXml(node, isRoot = false) {
+    let xml = `  <node`;
+    xml += ` ID="${escapeXml(node.id)}"`;
+    xml += ` TEXT="${escapeXml(node.text)}"`;
+    if (node.color) {
+      xml += ` COLOR="${escapeXml(node.color)}"`;
+    }
+    if (node.bgColor) {
+      xml += ` BACKGROUND_COLOR="${escapeXml(node.bgColor)}"`;
+    }
+    if (node.collapsed) {
+      xml += ` FOLDED="true"`;
+    }
+    
+    if (node.children && node.children.length > 0) {
+      xml += `>\n`;
+      node.children.forEach(child => {
+        // Indent child nodes recursively
+        xml += nodeToXml(child, false).split('\n').map(line => '  ' + line).join('\n') + '\n';
+      });
+      // Remove trailing empty line if any, and close tag
+      xml = xml.trimEnd();
+      xml += `\n  </node>`;
+    } else {
+      xml += `/>`;
+    }
+    return xml;
+  }
+
+  let xmlContent = `<map version="1.0.1">\n`;
+  xmlContent += nodeToXml(mindMapData, true) + `\n`;
+  xmlContent += `</map>`;
+
+  const blob = new Blob([xmlContent], { type: 'application/xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  
+  const downloadAnchor = document.createElement('a');
+  downloadAnchor.setAttribute("href", url);
+  
+  const date = new Date();
+  const stamp = `${date.getFullYear()}${(date.getMonth()+1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}`;
+  downloadAnchor.setAttribute("download", `noxmind_mindmap_${stamp}.mm`);
+  
+  document.body.appendChild(downloadAnchor);
+  downloadAnchor.click();
+  
+  setTimeout(() => {
+    document.body.removeChild(downloadAnchor);
+    URL.revokeObjectURL(url);
+  }, 250);
+}
+
+// Export as XMind (.xmind)
+async function exportXMind() {
+  function convertToXMindNode(noxNode) {
+    const xmindNode = {
+      id: noxNode.id,
+      title: noxNode.text,
+    };
+
+    if (noxNode.children && noxNode.children.length > 0) {
+      xmindNode.children = {
+        attached: noxNode.children.map(child => convertToXMindNode(child))
+      };
+    }
+
+    return xmindNode;
+  }
+
+  try {
+    if (typeof JSZip === 'undefined') {
+      alert("JSZip ライブラリが読み込まれていません。");
+      return;
+    }
+    const zip = new JSZip();
+    
+    const xmindData = [
+      {
+        id: "sheet1",
+        class: "sheet",
+        title: "Sheet 1",
+        rootTopic: convertToXMindNode(mindMapData)
+      }
+    ];
+    
+    zip.file("content.json", JSON.stringify(xmindData, null, 2));
+    
+    const manifest = {
+      "file-entries": {
+        "content.json": {
+          "media-type": "application/json"
+        },
+        "metadata.json": {
+          "media-type": "application/json"
+        }
+      }
+    };
+    zip.file("manifest.json", JSON.stringify(manifest, null, 2));
+    
+    const metadata = {
+      "creator": {
+        "name": "NoxMind",
+        "version": "1.0.0"
+      }
+    };
+    zip.file("metadata.json", JSON.stringify(metadata, null, 2));
+    
+    const content = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(content);
+    
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", url);
+    
+    const date = new Date();
+    const stamp = `${date.getFullYear()}${(date.getMonth()+1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}`;
+    downloadAnchor.setAttribute("download", `noxmind_mindmap_${stamp}.xmind`);
+    
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    
+    setTimeout(() => {
+      document.body.removeChild(downloadAnchor);
+      URL.revokeObjectURL(url);
+    }, 250);
+  } catch (err) {
+    console.error(err);
+    alert("XMindファイルのエクスポート中にエラーが発生しました。");
+  }
+}
+
 // --- Properties Panel Management ---
 
 function updateSidebar() {
@@ -3086,8 +3237,8 @@ function setupEventListeners() {
     }
   }
 
-  // Image export dropdown toggle
-  const dropdownToggle = document.getElementById('btn-export-image');
+  // Export dropdown toggle
+  const dropdownToggle = document.getElementById('btn-export-dropdown');
   if (dropdownToggle) {
     dropdownToggle.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -3097,7 +3248,7 @@ function setupEventListeners() {
   
   // Close dropdown on click outside and dismiss context menu
   window.addEventListener('click', (e) => {
-    if (!e.target.closest('#btn-export-image') && !e.target.closest('#btn-save-dropdown')) {
+    if (!e.target.closest('#btn-export-dropdown') && !e.target.closest('#btn-save-dropdown')) {
       document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open'));
     }
     hideContextMenu();
@@ -3257,10 +3408,40 @@ function setupEventListeners() {
   }
 
   const btnExportPng = document.getElementById('btn-export-png');
-  if (btnExportPng) btnExportPng.addEventListener('click', exportPNG);
+  if (btnExportPng) {
+    btnExportPng.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open'));
+      exportPNG();
+    });
+  }
 
   const btnExportSvg = document.getElementById('btn-export-svg');
-  if (btnExportSvg) btnExportSvg.addEventListener('click', exportSVG);
+  if (btnExportSvg) {
+    btnExportSvg.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open'));
+      exportSVG();
+    });
+  }
+
+  const btnExportXMind = document.getElementById('btn-export-xmind');
+  if (btnExportXMind) {
+    btnExportXMind.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open'));
+      exportXMind();
+    });
+  }
+
+  const btnExportFreeMind = document.getElementById('btn-export-freemind');
+  if (btnExportFreeMind) {
+    btnExportFreeMind.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open'));
+      exportFreeMind();
+    });
+  }
 
   const btnFit = document.getElementById('btn-fit');
   if (btnFit) btnFit.addEventListener('click', fitToScreen);
@@ -3604,7 +3785,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Handle fallback version display if placeholder isn't replaced by build script
   const versionSpan = document.querySelector('.app-version');
   if (versionSpan && versionSpan.textContent.includes('__APP_VERSION__')) {
-    versionSpan.textContent = 'v0.12.5'; // Fallback value from tauri.conf.json
+    versionSpan.textContent = 'v0.12.6'; // Fallback value from tauri.conf.json
   }
 
   // Apply UI translations based on system language

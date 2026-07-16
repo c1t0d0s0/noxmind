@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
-  <title>NoxMind - Elegant Mind Mapping</title>
+  <title>NoxMind - the Mind Mapping</title>
   <link class="cache-buster" rel="stylesheet" href="style.css?v=__APP_VERSION__">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -102,13 +102,15 @@
         <div class="divider"></div>
         
         <div class="dropdown">
-          <button id="btn-export-image" class="icon-btn dropdown-toggle" data-i18n-title="btn-export-image-title" title="画像として出力">
-            <span class="material-icons-round">image</span>
-            <span class="btn-text" data-i18n="btn-export-image">画像出力</span>
+          <button id="btn-export-dropdown" class="icon-btn dropdown-toggle" data-i18n-title="btn-export-dropdown-title" title="エクスポート（画像や他形式ファイル）">
+            <span class="material-icons-round">file_download</span>
+            <span class="btn-text" data-i18n="btn-export-dropdown">エクスポート</span>
           </button>
           <div class="dropdown-menu">
             <button id="btn-export-png"><span class="material-icons-round">photo</span><span data-i18n="btn-export-png">PNG 画像</span></button>
             <button id="btn-export-svg"><span class="material-icons-round">code</span><span data-i18n="btn-export-svg">SVG ベクター</span></button>
+            <button id="btn-export-xmind"><span class="material-icons-round">file_download</span><span data-i18n="btn-export-xmind">XMind形式 (.xmind)</span></button>
+            <button id="btn-export-freemind"><span class="material-icons-round">file_download</span><span data-i18n="btn-export-freemind">FreeMind形式 (.mm)</span></button>
           </div>
         </div>
 
