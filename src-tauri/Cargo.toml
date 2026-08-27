@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "0.12.7"
+version = "0.12.8"
 description = "NoxMind the Mind Map App"
 authors = ["you"]
 license = ""

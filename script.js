@@ -92,6 +92,10 @@ const TRANSLATIONS = {
     "btn-ok": "確定",
     "default-node-text": "ノード",
     "central-theme": "セントラルテーマ",
+    "child-node-1": "子ノード 1",
+    "child-node-2": "子ノード 2",
+    "grandchild-node-1": "孫ノード 1",
+    "grandchild-node-2": "孫ノード 2",
     "confirm-err-title": "削除できません",
     "confirm-err-root": "セントラルテーマ（ルート）は削除できません。",
     "confirm-delete-msg-multi": "選択した {count} 個のノードと、そのすべての子ノードを削除します。<br>本当に削除しますか？",
@@ -192,6 +196,10 @@ const TRANSLATIONS = {
     "btn-ok": "OK",
     "default-node-text": "Node",
     "central-theme": "Central Theme",
+    "child-node-1": "Child Node 1",
+    "child-node-2": "Child Node 2",
+    "grandchild-node-1": "Grandchild Node 1",
+    "grandchild-node-2": "Grandchild Node 2",
     "confirm-dialog-title": "Confirmation",
     "confirm-err-title": "Cannot Delete",
     "confirm-err-root": "The Central Theme (root) cannot be deleted.",
@@ -235,14 +243,75 @@ function applyTranslations() {
 }
 
 // --- Default Data Structure ---
-const DEFAULT_MINDMAP = {
-  id: "root",
-  text: t('central-theme'),
-  color: "#ffffff",
-  bgColor: "#1e1e2e",
-  branchColor: "#89b4fa",
-  children: []
-};
+function createDefaultMindMap() {
+  return {
+    id: "root",
+    text: t('central-theme'),
+    color: "#ffffff",
+    bgColor: "#1e1e2e",
+    branchColor: "#89b4fa",
+    children: [
+      {
+        id: "node-1",
+        text: t('child-node-1'),
+        color: "#ffffff",
+        bgColor: "#252538",
+        branchColor: "#f38ba8",
+        borderless: false,
+        children: [
+          {
+            id: "node-1-1",
+            text: t('grandchild-node-1'),
+            color: "#ffffff",
+            bgColor: "#252538",
+            branchColor: "#f38ba8",
+            borderless: false,
+            children: []
+          },
+          {
+            id: "node-1-2",
+            text: t('grandchild-node-2'),
+            color: "#ffffff",
+            bgColor: "#252538",
+            branchColor: "#f38ba8",
+            borderless: false,
+            children: []
+          }
+        ]
+      },
+      {
+        id: "node-2",
+        text: t('child-node-2'),
+        color: "#ffffff",
+        bgColor: "#252538",
+        branchColor: "#a6e3a1",
+        borderless: false,
+        children: [
+          {
+            id: "node-2-1",
+            text: t('grandchild-node-1'),
+            color: "#ffffff",
+            bgColor: "#252538",
+            branchColor: "#a6e3a1",
+            borderless: false,
+            children: []
+          },
+          {
+            id: "node-2-2",
+            text: t('grandchild-node-2'),
+            color: "#ffffff",
+            bgColor: "#252538",
+            branchColor: "#a6e3a1",
+            borderless: false,
+            children: []
+          }
+        ]
+      }
+    ]
+  };
+}
+
+const DEFAULT_MINDMAP = createDefaultMindMap();
 
 function getLocalStorageData(key, fallback) {
   try {
@@ -3791,7 +3860,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Handle fallback version display if placeholder isn't replaced by build script
   const versionSpan = document.querySelector('.app-version');
   if (versionSpan && versionSpan.textContent.includes('__APP_VERSION__')) {
-    versionSpan.textContent = 'v0.12.7'; // Fallback value from tauri.conf.json
+    versionSpan.textContent = 'v0.12.8'; // Fallback value from tauri.conf.json
   }
 
   // Apply UI translations based on system language

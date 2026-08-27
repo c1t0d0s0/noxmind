@@ -2,8 +2,11 @@ name: Deploy to GitHub Pages
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
+  workflow_dispatch:
 
 # Grant GITHUB_TOKEN permissions required to deploy to GitHub Pages
 permissions:
@@ -33,6 +36,20 @@ jobs:
 
       - name: Install dependencies
         run: npm ci || npm install
+
+      - name: Inject GTM_ID from repository variable if available
+        env:
+          GTM_ID_VAR: ${{ vars.GTM_ID }}
+          GTM_ID_SECRET: ${{ secrets.GTM_ID }}
+        run: |
+          GTM_ID="${GTM_ID_VAR:-$GTM_ID_SECRET}"
+          if [ -n "$GTM_ID" ]; then
+            echo "const GTM_ID = '$GTM_ID';" > config.js
+            echo "Generated config.js with GTM_ID from repository variable/secret"
+          else
+            echo "const GTM_ID = '';" > config.js
+            echo "GTM_ID is not configured, generated empty config.js"
+          fi
 
       - name: Build www assets
         run: npm run build:assets

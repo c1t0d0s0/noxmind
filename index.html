@@ -11,6 +11,21 @@
   <!-- Google Material Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="config.js"></script>
+  <!-- Google tag (gtag.js) -->
+  <script>
+    if (typeof GTM_ID !== 'undefined' && GTM_ID) {
+      const gtmScript = document.createElement('script');
+      gtmScript.async = true;
+      gtmScript.src = 'https://www.googletagmanager.com/gtag/js?id=' + GTM_ID;
+      document.head.appendChild(gtmScript);
+
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', GTM_ID);
+    }
+  </script>
   <script>
     window.onerror = function(message, source, lineno, colno, error) {
       const errorDiv = document.createElement('div');

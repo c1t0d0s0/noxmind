@@ -25,6 +25,7 @@ try {
 const htmlSrc = path.join(__dirname, 'index.html');
 const cssSrc = path.join(__dirname, 'style.css');
 const jsSrc = path.join(__dirname, 'script.js');
+const configSrc = path.join(__dirname, 'config.js');
 
 if (!fs.existsSync(htmlSrc) || !fs.existsSync(cssSrc) || !fs.existsSync(jsSrc)) {
   console.error('Required source files not found!');
@@ -41,6 +42,13 @@ if (inline) {
   const cssTag = `<style>\n${cssContent}\n</style>`;
   htmlContent = htmlContent.replace(/<link[^>]*href=["']style\.css[^"']*["'][^>]*>/i, cssTag);
 
+  let configContent = "const GTM_ID = '';";
+  if (fs.existsSync(configSrc)) {
+    configContent = fs.readFileSync(configSrc, 'utf8');
+  }
+  const configTag = `<script>\n${configContent}\n</script>`;
+  htmlContent = htmlContent.replace(/<script[^>]*src=["']config\.js[^"']*["'][^>]*><\/script>/i, configTag);
+
   const jsTag = `<script>\n${jsContent}\n</script>`;
   htmlContent = htmlContent.replace(/<script[^>]*src=["']script\.js[^"']*["'][^>]*><\/script>/i, jsTag);
 
@@ -50,5 +58,11 @@ if (inline) {
   fs.writeFileSync(path.join(destDir, 'index.html'), htmlContent, 'utf8');
   fs.copyFileSync(cssSrc, path.join(destDir, 'style.css'));
   fs.copyFileSync(jsSrc, path.join(destDir, 'script.js'));
-  console.log(`Copied index.html, style.css, script.js to www/ (version: ${version})`);
+  if (fs.existsSync(configSrc)) {
+    fs.copyFileSync(configSrc, path.join(destDir, 'config.js'));
+    console.log(`Copied index.html, style.css, script.js, config.js to www/ (version: ${version})`);
+  } else {
+    fs.writeFileSync(path.join(destDir, 'config.js'), "const GTM_ID = '';\n", 'utf8');
+    console.log(`Copied index.html, style.css, script.js, (empty) config.js to www/ (version: ${version})`);
+  }
 }
