@@ -242,8 +242,9 @@ function applyTranslations() {
   });
 }
 
-// --- Default Data Structure ---
-function createDefaultMindMap() {
+// --- Default Data Structures ---
+// Sample mind map displayed to first-time visitors
+function createSampleMindMap() {
   return {
     id: "root",
     text: t('central-theme'),
@@ -311,7 +312,19 @@ function createDefaultMindMap() {
   };
 }
 
-const DEFAULT_MINDMAP = createDefaultMindMap();
+// Blank mind map created when the user clicks 'New' (新規)
+function createBlankMindMap() {
+  return {
+    id: "root",
+    text: t('central-theme'),
+    color: "#ffffff",
+    bgColor: "#1e1e2e",
+    branchColor: "#89b4fa",
+    children: []
+  };
+}
+
+const DEFAULT_MINDMAP = createSampleMindMap();
 
 function getLocalStorageData(key, fallback) {
   try {
@@ -3205,7 +3218,7 @@ function setupEventListeners() {
         t("confirm-new-msg"),
         t("confirm-new-btn"),
         () => {
-          mindMapData = JSON.parse(JSON.stringify(DEFAULT_MINDMAP));
+          mindMapData = createBlankMindMap();
           currentFilePath = null;
           selectedNodeIds = new Set(['root']);
           activeNodeId = 'root';
@@ -3472,9 +3485,13 @@ function setupEventListeners() {
         t("confirm-new-msg"),
         t("confirm-new-btn"),
         () => {
-          mindMapData = JSON.parse(JSON.stringify(DEFAULT_MINDMAP));
+          mindMapData = createBlankMindMap();
+          currentFilePath = null;
+          selectedNodeIds = new Set(['root']);
           activeNodeId = 'root';
           saveToLocalStorage();
+          updateFileNameDisplay();
+          updateSaveButtonsState();
           renderMindMap();
           centerMindMap();
         }
@@ -3860,7 +3877,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Handle fallback version display if placeholder isn't replaced by build script
   const versionSpan = document.querySelector('.app-version');
   if (versionSpan && versionSpan.textContent.includes('__APP_VERSION__')) {
-    versionSpan.textContent = 'v0.12.8'; // Fallback value from tauri.conf.json
+    versionSpan.textContent = 'v0.12.9'; // Fallback value from tauri.conf.json
   }
 
   // Apply UI translations based on system language
