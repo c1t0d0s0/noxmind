@@ -24,7 +24,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
   <!-- Google Material Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous"></script>
   <script src="config.js"></script>
   <!-- Google tag (gtag.js) -->
   <script>
@@ -32,6 +32,10 @@
       const gtmScript = document.createElement('script');
       gtmScript.async = true;
       gtmScript.src = 'https://www.googletagmanager.com/gtag/js?id=' + GTM_ID;
+      gtmScript.crossOrigin = 'anonymous';
+      gtmScript.onerror = function() {
+        console.warn('[GTM] Tag blocked or failed to load.');
+      };
       document.head.appendChild(gtmScript);
 
       window.dataLayer = window.dataLayer || [];
@@ -42,6 +46,26 @@
   </script>
   <script>
     window.onerror = function(message, source, lineno, colno, error) {
+      // 1. Ignore generic cross-origin / third-party / Safari WebClip script errors
+      if (
+        message === 'Script error.' ||
+        message === 'Script error' ||
+        (!source && lineno === 0) ||
+        (source && (source.includes('googletagmanager.com') || source.includes('google-analytics.com')))
+      ) {
+        console.warn('[Ignored external script error]:', message, source);
+        return true; // Suppress default error reporting
+      }
+
+      console.error('[NoxMind JS Error]:', message, source, lineno, colno, error);
+
+      // Only display the visual error overlay in Tauri desktop environment or when explicit debug query parameter is present
+      const isTauriEnv = typeof window.__TAURI__ !== 'undefined' && window.__TAURI__ !== null;
+      const isDebugParam = window.location.search.includes('debug=1');
+      if (!isTauriEnv && !isDebugParam) {
+        return false;
+      }
+
       const errorDiv = document.createElement('div');
       errorDiv.style.position = 'fixed';
       errorDiv.style.top = '0';
@@ -58,7 +82,10 @@
       errorDiv.style.whiteSpace = 'pre-wrap';
       errorDiv.style.overflow = 'auto';
       errorDiv.style.boxSizing = 'border-box';
-      errorDiv.innerHTML = '<h2 style="color: #ff4a4a; margin-top: 0;">[NoxMind JS Error]</h2>' +
+      errorDiv.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">' +
+                           '<h2 style="color: #ff4a4a; margin: 0;">[NoxMind JS Error]</h2>' +
+                           '<button onclick="this.parentElement.parentElement.remove()" style="background:#ff4a4a;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-weight:bold;">閉じる ✕</button>' +
+                           '</div>' +
                            '<p><strong>Message:</strong> ' + message + '</p>' +
                            '<p><strong>Source:</strong> ' + source + '</p>' +
                            '<p><strong>Line:</strong> ' + lineno + ' <strong>Column:</strong> ' + colno + '</p>' +
@@ -66,8 +93,23 @@
       document.body.appendChild(errorDiv);
       return false;
     };
+
     window.addEventListener('unhandledrejection', function(event) {
       const error = event.reason;
+      if (!error) return;
+      const msg = typeof error === 'string' ? error : (error.message || '');
+      if (msg === 'Script error.' || msg === 'Script error') {
+        event.preventDefault();
+        return;
+      }
+      console.error('[NoxMind Unhandled Promise Rejection]:', error);
+
+      const isTauriEnv = typeof window.__TAURI__ !== 'undefined' && window.__TAURI__ !== null;
+      const isDebugParam = window.location.search.includes('debug=1');
+      if (!isTauriEnv && !isDebugParam) {
+        return;
+      }
+
       const errorDiv = document.createElement('div');
       errorDiv.style.position = 'fixed';
       errorDiv.style.top = '0';
@@ -84,7 +126,10 @@
       errorDiv.style.whiteSpace = 'pre-wrap';
       errorDiv.style.overflow = 'auto';
       errorDiv.style.boxSizing = 'border-box';
-      errorDiv.innerHTML = '<h2 style="color: #ff4a4a; margin-top: 0;">[NoxMind Unhandled Promise Rejection]</h2>' +
+      errorDiv.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">' +
+                           '<h2 style="color: #ff4a4a; margin: 0;">[NoxMind Unhandled Rejection]</h2>' +
+                           '<button onclick="this.parentElement.parentElement.remove()" style="background:#ff4a4a;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-weight:bold;">閉じる ✕</button>' +
+                           '</div>' +
                            '<p><strong>Reason:</strong> ' + error + '</p>' +
                            '<p><strong>Stack:</strong> ' + (error && error.stack ? error.stack : 'N/A') + '</p>';
       document.body.appendChild(errorDiv);

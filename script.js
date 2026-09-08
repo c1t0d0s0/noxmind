@@ -3736,8 +3736,10 @@ SOFTWARE.`;
   // Prevent page bounce and horizontal viewport scroll on iOS Safari
   document.addEventListener('touchmove', (e) => {
     if (e.touches.length >= 2) return;
-    const isScrollable = e.target.closest('.sidebar-content') || e.target.closest('.modal-body');
-    const isInteractive = e.target.closest('button') || e.target.closest('a') || e.target.closest('input') || e.target.closest('.app-header');
+    const target = e.target && typeof e.target.closest === 'function' ? e.target : (e.target && e.target.parentElement);
+    if (!target || typeof target.closest !== 'function') return;
+    const isScrollable = target.closest('.sidebar-content') || target.closest('.modal-body');
+    const isInteractive = target.closest('button') || target.closest('a') || target.closest('input') || target.closest('.app-header');
     if (!isScrollable && !isInteractive) {
       e.preventDefault();
     }
@@ -3923,11 +3925,14 @@ window.addEventListener('load', () => {
 window.addEventListener('scroll', (e) => {
   if (e.target && e.target !== document && e.target !== window) {
     if (e.target.scrollLeft !== 0 || e.target.scrollTop !== 0) {
-      const isSidebar = e.target.classList.contains('sidebar-content') || e.target.closest('.sidebar-content');
-      const isModal = e.target.classList.contains('modal-body') || e.target.closest('.modal-body');
-      if (!isSidebar && !isModal) {
-        e.target.scrollLeft = 0;
-        e.target.scrollTop = 0;
+      const target = e.target && typeof e.target.closest === 'function' ? e.target : (e.target && e.target.parentElement);
+      if (target && typeof target.closest === 'function') {
+        const isSidebar = (target.classList && target.classList.contains('sidebar-content')) || target.closest('.sidebar-content');
+        const isModal = (target.classList && target.classList.contains('modal-body')) || target.closest('.modal-body');
+        if (!isSidebar && !isModal) {
+          e.target.scrollLeft = 0;
+          e.target.scrollTop = 0;
+        }
       }
     }
   } else {
