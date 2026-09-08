@@ -66,3 +66,21 @@ if (inline) {
     console.log(`Copied index.html, style.css, script.js, (empty) config.js to www/ (version: ${version})`);
   }
 }
+
+// Copy PWA assets & icons if present
+const pwaFiles = [
+  'manifest.json',
+  'apple-touch-icon.png',
+  'icon-192.png',
+  'icon-512.png',
+  'favicon.png',
+  'favicon.ico'
+];
+
+pwaFiles.forEach(file => {
+  const src = path.join(__dirname, file);
+  if (fs.existsSync(src)) {
+    fs.copyFileSync(src, path.join(destDir, file));
+  }
+});
+console.log('Copied PWA manifest and icons to www/');
